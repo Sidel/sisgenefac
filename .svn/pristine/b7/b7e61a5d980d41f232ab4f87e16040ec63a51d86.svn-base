@@ -1,0 +1,73 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Catalogo;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("catalogoDao")
+@Transactional
+public class CatalogoDaoImpl extends GenericDaoImpl<Catalogo, String> implements CatalogoDao {
+
+    public CatalogoDaoImpl() {
+        super(Catalogo.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Catalogo> findAll() {
+        return em.createNamedQuery("Catalogo.findAll")
+                .getResultList();
+    }
+
+    @Override
+    public Catalogo findByEquipoNombre(String equipo) {
+        List<Catalogo> rol = em.createNamedQuery("Catalogo.findByCatGrupoNombre")
+                .setParameter("catGrupo", 2)
+                .setParameter("catNombre", equipo)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Catalogo findByCatalogoId(int id) {
+
+        List<Catalogo> rol = em.createNamedQuery("Catalogo.findByCatId")
+                .setParameter("catId", id)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Catalogo findByCatalogoGrupoSubGrupo(int idGrupo, int idSubGrupo) {
+        List<Catalogo> rol = em.createNamedQuery("Catalogo.findByCatGrupoSubGrupo")
+                .setParameter("catGrupo", idGrupo)
+                .setParameter("catSubGrupo", idSubGrupo)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    public List<Catalogo> findByCatalogoGrupo(int idGrupo) {
+        return em.createNamedQuery("Catalogo.findByCatGrupo")
+                .setParameter("catGrupo", idGrupo)
+                .getResultList();
+    }
+
+    @Override
+    public Catalogo findByCatalogoGrupoSubGrupoCod(int idGrupo, String cod) {
+         List<Catalogo> rol = em.createNamedQuery("Catalogo.findByCatGrupoSubGrupoCod")
+                .setParameter("catGrupo", idGrupo)
+                .setParameter("cod", cod)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+}

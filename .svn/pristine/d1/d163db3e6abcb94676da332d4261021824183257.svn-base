@@ -1,0 +1,56 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import java.util.List;
+import com.fabrica.sisgene.domain.Usuario;
+import com.fabrica.sisgene.vo.Result;
+
+public interface UsuarioService {
+
+    public Result<Usuario> store(
+            String encuesta,
+            String clave,
+            String dni,
+            String paterno,
+            String materno,
+            String nombres,
+            String tipo,
+            int grupo,
+            int desde,
+            int hasta,
+            String departamento,
+            String provincia,
+            String distrito,
+            String tipoEq,
+            String marca,
+            String serie);
+    
+    public Result<Usuario> actualizar(
+            String encuesta,
+            String usuario,
+            String dni,
+            String paterno,
+            String materno,
+            String nombres,
+            String tipo,
+            int grupo,
+            int desde,
+            int hasta,
+            String departamento,
+            String provincia,
+            String distrito,
+            String tipoEq,
+            String marca,
+            String serie);
+
+    public Result<Usuario> remove(String username, String enc);
+
+    public Result<Usuario> find(String username);
+
+    public Result<List<Usuario>> findAll(String actionUsername);
+    
+    public Result<Usuario> findByUsernamePassword(String username, String password);
+    
+    
+
+}

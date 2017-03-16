@@ -1,0 +1,28 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.domain.Usuario;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.UsuarioPorEncuesta;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface UsuarioPersonaService {
+
+    public Result<UsuarioPersona> guardar(UsuarioPersona usup);
+    public Result<UsuarioPersona> findByUsuId(Usuario id);
+    public Result<List<UsuarioPersona>> findAll();
+    public Result<List<UsuarioPersona>> findByEncuesta(CaratulaEncuesta encuesta);
+    public Result<List<UsuarioPersona>> findByEncuestaGrupo(CaratulaEncuesta encuesta, Grupo grupo);
+    public Result<UsuarioPersona> finByUsernamePassword(String usuario, String clave);
+    public Result<List<UsuarioPorEncuesta>> guardar(List<UsuarioPorEncuesta> usuarios);
+    public Result<List<UsuarioPersona>> actualizar(List<UsuarioPersona> usuarios);
+    public Result<UsuarioPersona> buscarAdministradorPorEncuesta(CaratulaEncuesta encuesta);
+    public Result<UsuarioPersona> findByUsuarioPersona(String codigoEncuesta, String usuario);
+    public int validarUsuarioEnEncuesta(String dni, CaratulaEncuesta cae);
+}

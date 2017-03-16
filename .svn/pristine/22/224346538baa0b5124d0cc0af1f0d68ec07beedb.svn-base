@@ -1,0 +1,16 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ */
+public interface GrupoService {
+
+    public Result<List<Grupo>> findByCaeUd(CaratulaEncuesta ca);
+    public Result<Grupo> findByUsu(String usuario);
+    public Result<Grupo> buscarSupervisor(CaratulaEncuesta encuesta, int numeroGrupo);
+}

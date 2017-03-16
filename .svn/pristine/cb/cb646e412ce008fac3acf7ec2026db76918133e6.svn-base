@@ -1,0 +1,198 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.domain.*;
+import com.fabrica.sisgene.service.AccesoService;
+import com.fabrica.sisgene.service.RolService;
+import com.fabrica.sisgene.vo.Result;
+import static com.fabrica.sisgene.web.AbstractHandler.getJsonErrorMsg;
+import static com.fabrica.sisgene.web.AbstractHandler.toJsonString;
+import static com.fabrica.sisgene.web.SecurityHelper.getSessionUser;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonValue;
+import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping("/roles")
+public class RolHandler extends AbstractHandler {
+
+    @Autowired
+    protected RolService rolService;
+
+    @Autowired
+    protected AccesoService accService;
+
+    @RequestMapping(value = "/{idRol}", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    public @ResponseBody
+    Object find(
+            @PathVariable(value = "idRol") int idRol,
+            HttpServletRequest request) {
+
+        Result<Rol> ar = rolService.encontrar(idRol);
+
+        if (ar.isSuccess()) {
+            return getJsonSuccessData(ar.getData());
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.POST, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String store(
+            @RequestBody String jsonData,
+            HttpServletRequest request) {
+
+//        System.out.println("" + jsonData);
+        JsonObject jsonObj = parseJsonObject(jsonData);
+
+        Result<Rol> ar = rolService.guardar(
+                jsonObj.getString("codigo"),
+                jsonObj.getString("descripcion"));
+
+        if (ar.isSuccess()) {
+
+            return getJsonSuccessData(ar.getData());
+
+        } else {
+
+            return getJsonErrorMsg(ar.getMsg());
+
+        }
+    }
+
+    @RequestMapping(value = "/{idRol}", method = RequestMethod.PUT, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String update(
+            @RequestBody String jsonData,
+            @PathVariable(value = "idRol") int idRol,
+            HttpServletRequest request) {
+
+        JsonObject jsonObj = parseJsonObject(jsonData);
+        List<AccesoUtil> lista = new ArrayList<AccesoUtil>();
+
+        try {
+            JsonArray msg = jsonObj.getJsonArray("accesos");
+            Iterator<JsonValue> iterator = msg.iterator();
+//            System.out.println("msg:::" + msg);
+            if (msg.toString().trim().equals("[]") || msg == null) {
+                lista = null;
+            } else {
+                while (iterator.hasNext()) {
+                    JsonObject jsonObjCh = (JsonObject) iterator.next();
+                    AccesoUtil acc = new AccesoUtil(jsonObjCh.getInt("id"), jsonObjCh.getString("descripcion"));
+                    lista.add(acc);
+                }
+
+//                System.out.println("lista accesos encontrada");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+//            System.out.println("lista accesos no encontrada");
+            lista = null;
+        }
+
+        Result<Rol> ar = rolService.actualizar(
+                idRol,
+                jsonObj.getString("codigo"),
+                jsonObj.getString("descripcion"),
+                lista);
+
+        if (ar.isSuccess()) {
+            return getJsonSuccessData(ar.getData());
+        } else {
+            return getJsonErrorMsg(ar.getMsg());
+        }
+    }
+
+    @RequestMapping(value = "/{idRol}", method = RequestMethod.DELETE, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String remove(
+            @PathVariable(value = "idRol") Integer idRol,
+            HttpServletRequest request) {
+
+        UsuarioPersona sessionUser = getSessionUser(request);
+
+        Result<Rol> parametro = rolService.eliminar(
+                idRol);
+
+        if (parametro.isSuccess()) {
+            return getJsonSuccessMsg(parametro.getMsg());
+
+        } else {
+
+            return getJsonErrorMsg(parametro.getMsg());
+
+        }
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String findAll(HttpServletRequest request) {
+
+        Result<List<Rol>> roles = rolService.encontrarTodo();
+
+        if (roles.isSuccess()) {
+
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("success", true);
+
+            JsonArrayBuilder projectChildrenArrayBuilder = Json.createArrayBuilder();
+
+            for (Rol rol : roles.getData()) {
+
+//                List<Acceso> accesos = rol.getAccesoList();
+                List<Acceso> accesos = accService.encontrarPorRol(rol.getRolId()).getData();
+                JsonArrayBuilder accesoChildrenArrayBuilder = Json.createArrayBuilder();
+
+//                System.out.println("accesos sizww:" + accesos.size());
+
+                for (Acceso acc : accesos) {
+//                    System.out.println("rol.getRolDescripcion();" + rol.getRolDescripcion());
+                    accesoChildrenArrayBuilder.add(
+                            Json.createObjectBuilder()
+                            .add("id", acc.getFunId().getFunId())
+                            .add("descripcion", acc.getFunId().getFunNombre())
+                    );
+
+                }
+
+                projectChildrenArrayBuilder.add(
+                        Json.createObjectBuilder()
+                        .add("id", rol.getRolId())
+                        .add("codigo", rol.getRolCodigo())
+                        .add("descripcion", rol.getRolDescripcion())
+                        .add("accesos", accesoChildrenArrayBuilder)
+                );
+
+            }
+
+            builder.add("roles", projectChildrenArrayBuilder);
+
+            return toJsonString(builder.build());
+
+        } else {
+
+            return getJsonErrorMsg(roles.getMsg());
+
+        }
+    }
+
+}

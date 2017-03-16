@@ -1,0 +1,286 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.CaratulaEncuestaDao;
+import com.fabrica.sisgene.dao.CatalogoDao;
+import com.fabrica.sisgene.dao.SeccionDao;
+import com.fabrica.sisgene.dao.SubSeccionDao;
+import java.util.List;
+import com.fabrica.sisgene.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+@Service("caratulaEncService")
+public class CaratulaEncuestaServiceImpl extends AbstractService implements CaratulaEncuestaService {
+
+    @Autowired
+    protected CaratulaEncuestaDao parametroDao;
+
+    @Autowired
+    protected CatalogoDao catDao;
+
+    @Autowired
+    protected SeccionDao seccDao;
+
+    @Autowired
+    protected SubSeccionDao subseccDao;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+    public CaratulaEncuestaServiceImpl() {
+        super();
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<CaratulaEncuesta> find(Integer idCompany) {
+
+        CaratulaEncuesta company = parametroDao.find(idCompany);
+
+        if (company == null) {
+            return ResultFactory.getNotFoundResult();
+        }
+        return ResultFactory.getSuccessResult(company);
+    }
+
+    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+    @Override
+    public Result<CaratulaEncuesta> store(
+            String codigo,
+            String descripcion,
+            int numeroEncuestas,
+            String desde,
+            String hasta,
+            String estado,
+            String equipo) {
+
+        CaratulaEncuesta caEx = parametroDao.findByCodigo(codigo.trim());
+
+        if (caEx != null) {
+            return ResultFactory.getFailResult("Parametros de Encuesta no registrada. Ya existe una encuesta con el código =" + codigo);
+        } else {
+            
+            if(desde.equals(hasta)){ 
+                return ResultFactory.getFailResult("Parametros de Encuesta no registrada. Ingrese fechas de Inicio y Fin distintas");
+            }
+            
+            if(estado.equals("Concluida")||estado.equals("Cancelada")){ 
+                return ResultFactory.getFailResult("Parametros de Encuesta no registrada. Elija el estado de encuesta 'Activa'");
+            }
+            
+            Character est = '0';
+
+            switch (estado) {
+                case "Activa":
+                    est = 'A';
+                    break;
+                case "Inactiva":
+                    est = 'I';
+                    break;
+                case "Concluida":
+                    est = 'C';
+                    break;
+                case "Rechazada":
+                    est = 'R';
+                    break;
+            };
+
+            int eq = 0;
+            if (!equipo.equals("")) {
+                try {
+                    eq = catDao.findByEquipoNombre(equipo).getCatSubGrupo();
+                } catch (Exception e) {
+                    eq = 0;
+                }
+            }
+
+            CaratulaEncuesta carEnc = new CaratulaEncuesta();
+            carEnc.setCaeId(2);
+            carEnc.setCaeCodigo(codigo);
+            carEnc.setCaeDescripcion(descripcion);
+            carEnc.setCaeTipoDispositivo(eq);
+            carEnc.setCaeNumeroEncuestasUsu(numeroEncuestas);
+            carEnc.setCaeEstado(est);
+
+            try {
+                Date desdef=sdf.parse(desde);
+                Date hoy=new Date();
+                carEnc.setCaeFfin(sdf.parse(hasta));
+                carEnc.setCaeFinicio(desdef);
+                if(desdef.getDay()==hoy.getDay()&&desdef.getMonth()==hoy.getMonth()&&desdef.getYear()==hoy.getYear()){
+                    return ResultFactory.getFailResult("Parametros de Encuesta no registrada. Elija una fecha de inicio distinta al dia actual");
+                }
+                
+            } catch (ParseException ex) {
+                Logger.getLogger(CaratulaEncuestaServiceImpl.class.getName()).log(Level.SEVERE, null, ex);
+                return ResultFactory.getFailResult("Formato de Fecha de incorrecta");
+            }
+
+            parametroDao.persist(carEnc);
+
+            return ResultFactory.getSuccessResult(carEnc);
+        }
+
+    }
+
+    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+    @Override
+    public Result<CaratulaEncuesta> update(
+            int idCaratulaEncuesta,
+            String codigo,
+            String descripcion,
+            int numeroEncuestas,
+            String desde,
+            String hasta,
+            String estado,
+            String equipo) {
+
+        List<CaratulaEncuesta> lista = parametroDao.encontrarTodo();
+
+        boolean encontro = false;
+        for (CaratulaEncuesta carat : lista) {
+            System.out.println("carat.getCaeCodigo():" + carat.getCaeCodigo() + " codigo;" + codigo + " carat.getCaeId():" + carat.getCaeId() + " idcarat:" + idCaratulaEncuesta);
+            if (carat.getCaeCodigo().equals(codigo.trim()) && (!carat.getCaeId().equals(idCaratulaEncuesta))) {
+                System.out.println("encontro");
+                encontro = true;
+            }
+        }
+
+        if (encontro) {
+            return ResultFactory.getFailResult("Pamanetros de encuesta no modificada. Ya existe una encuesta con codigo=" + codigo);
+        } else {
+            CaratulaEncuesta carEncuesta = new CaratulaEncuesta();
+            carEncuesta = parametroDao.find(idCaratulaEncuesta);
+            if (carEncuesta == null) {
+                return ResultFactory.getFailResult("No se encontro Parametros de Encuesta con ID=" + idCaratulaEncuesta);
+            }
+
+            if (carEncuesta.getCaeFinicio().before(new Date())) {
+                return ResultFactory.getFailResult("No se modifico los parametros de la Encuesta. La encuesta ya ha sido iniciada");
+            } else {
+                Character est = '0';
+
+                switch (estado) {
+                    case "Activa":
+                        est = 'A';
+                        break;
+                    case "Inactiva":
+                        est = 'I';
+                        break;
+                    case "Concluida":
+                        est = 'C';
+                        break;
+                    case "Rechazada":
+                        est = 'R';
+                        break;
+                };
+
+                int eq;
+                try {
+                    eq = catDao.findByEquipoNombre(equipo).getCatSubGrupo();
+                } catch (Exception e) {
+                    eq = 0;
+                }
+
+                if (!carEncuesta.getCaeCodigo().trim().equals(codigo)) {
+
+                    List<Seccion> listaSecc = seccDao.listarPorEncuesta(carEncuesta);
+                    if (listaSecc != null) {
+                        for (Seccion ss : listaSecc) {
+                            ss.setCaeId(codigo);
+                            seccDao.merge(ss);
+                        }
+                    }
+
+                    List<SubSeccion> listaSubSecc = subseccDao.findByEnc(carEncuesta);
+                    if (listaSubSecc != null) {
+                        for (SubSeccion sus : listaSubSecc) {
+                            sus.setCaeId(codigo);
+                            subseccDao.merge(sus);
+                        }
+                    }
+
+                }
+
+                carEncuesta.setCaeCodigo(codigo);
+                carEncuesta.setCaeDescripcion(descripcion);
+                carEncuesta.setCaeTipoDispositivo(eq);
+                carEncuesta.setCaeNumeroEncuestasUsu(numeroEncuestas);
+                carEncuesta.setCaeEstado(est);
+
+                try {//new Date(parseInt(jsonDate.substr(6))); 2015-11-09T05:00:00.000Z
+                    System.out.println("fd:" + sdf.parse(desde));
+                    carEncuesta.setCaeFfin(sdf.parse(hasta));
+                    carEncuesta.setCaeFinicio(sdf.parse(desde));
+                } catch (ParseException ex) {
+                    Logger.getLogger(CaratulaEncuestaServiceImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    return ResultFactory.getFailResult("Formato de Fecha de incorrecta");
+                }
+                carEncuesta.setCaeCodigo(codigo);
+                if (carEncuesta.getCaeId() == null) {
+                    parametroDao.persist(carEncuesta);
+                } else {
+                    carEncuesta = parametroDao.merge(carEncuesta);
+                }
+
+                return ResultFactory.getSuccessResult(carEncuesta);
+            }
+
+        }
+
+    }
+
+    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+    @Override
+    public Result<CaratulaEncuesta> remove(int idParametro) {
+
+        CaratulaEncuesta parametro = parametroDao.find(idParametro);
+
+        if (parametro == null) {
+            return ResultFactory.getFailResult("No se puede cargar el Parámetro para removerlo con el ID=" + idParametro);
+
+        } else {
+
+            if (parametro.getCaeFinicio().before(new Date())) {
+                return ResultFactory.getFailResult("No se modifico los parametros de la Encuesta. La encuesta ya ha sido iniciada");
+            } else {
+                try {
+                    parametroDao.remove(parametro);
+                    String msg = "Parámetro de Encuesta " + parametro.getCaeCodigo() + " fue eliminada";
+                    logger.info(msg);
+                    return ResultFactory.getSuccessResultMsg(msg);
+
+                } catch (Exception e) {
+                    return ResultFactory.getFailResult("Parámetro tiene encuestas asignadas y no se puede eliminar");
+                }
+            }
+
+        }
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<List<Object[]>> findAll() {
+        return ResultFactory.getSuccessResult(parametroDao.findAll());
+    }
+    
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<List<Object[]>> findNoExpiradas() {
+        return ResultFactory.getSuccessResult(parametroDao.findNoExpiradas());
+    }
+
+    @Override
+    public Result<CaratulaEncuesta> findByCodigo(String codigo) {
+        return ResultFactory.getSuccessResult(parametroDao.findByCodigo(codigo));
+    }
+}

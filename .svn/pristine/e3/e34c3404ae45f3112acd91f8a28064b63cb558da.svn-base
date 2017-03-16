@@ -1,0 +1,186 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.util.List;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "sub_seccion")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "SubSeccion.findAll", query = "SELECT s FROM SubSeccion s"),
+    @NamedQuery(name = "SubSeccion.findBySusId", query = "SELECT s FROM SubSeccion s WHERE s.susId = :susId"),
+    @NamedQuery(name = "SubSeccion.findBySusNombre", query = "SELECT s FROM SubSeccion s WHERE s.susNombre = :susNombre"),
+    @NamedQuery(name = "SubSeccion.findBySusNota", query = "SELECT s FROM SubSeccion s WHERE s.susNota = :susNota"),
+    @NamedQuery(name = "SubSeccion.findBySusNumeroSubseccion", query = "SELECT s FROM SubSeccion s WHERE s.susNumeroSubseccion = :susNumeroSubseccion")})
+public class SubSeccion extends AbstractEntity implements EntityItem<String>  {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "sus_id")
+    private Integer susId;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 200)
+    @Column(name = "sus_nombre")
+    private String susNombre;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 300)
+    @Column(name = "sus_nota")
+    private String susNota;
+    @Size(max = 8)
+    @Column(name = "sus_numero_subseccion")
+    private String susNumeroSubseccion;
+    @Size(max = 30)
+    @Column(name = "cae_id")
+    private String caeId;
+    @Size(max = 4)
+    @Column(name = "seccion")
+    private String seccion;
+    @OneToMany(mappedBy = "susIdNivel1")
+    private List<EstructuraEncuesta> estructuraEncuestaList;
+
+    public SubSeccion() {
+    }
+
+    public SubSeccion(Integer susId) {
+        this.susId = susId;
+    }
+
+    public SubSeccion(Integer susId, String susNombre, String susNota, String susNumeroSubseccion, String caeId, String seccion) {
+        this.susId = susId;
+        this.susNombre = susNombre;
+        this.susNota = susNota;
+        this.susNumeroSubseccion=susNumeroSubseccion;
+        this.caeId=caeId;
+        this.seccion=seccion;
+    }
+
+    public String getSeccion() {
+        return seccion;
+    }
+
+    public void setSeccion(String seccion) {
+        this.seccion = seccion;
+    }
+
+    public String getCaeId() {
+        return caeId;
+    }
+
+    public void setCaeId(String caeId) {
+        this.caeId = caeId;
+    }
+
+    public Integer getSusId() {
+        return susId;
+    }
+
+    public void setSusId(Integer susId) {
+        this.susId = susId;
+    }
+
+    public String getSusNombre() {
+        return susNombre;
+    }
+
+    public void setSusNombre(String susNombre) {
+        this.susNombre = susNombre;
+    }
+
+    public String getSusNota() {
+        return susNota;
+    }
+
+    public void setSusNota(String susNota) {
+        this.susNota = susNota;
+    }
+
+    public String getSusNumeroSubseccion() {
+        return susNumeroSubseccion;
+    }
+
+    public void setSusNumeroSubseccion(String susNumeroSubseccion) {
+        this.susNumeroSubseccion = susNumeroSubseccion;
+    }
+
+    @XmlTransient
+    public List<EstructuraEncuesta> getEstructuraEncuestaList() {
+        return estructuraEncuestaList;
+    }
+
+    public void setEstructuraEncuestaList(List<EstructuraEncuesta> estructuraEncuestaList) {
+        this.estructuraEncuestaList = estructuraEncuestaList;
+    }
+
+//    @XmlTransient
+//    public List<EstructuraEncuesta> getEstructuraEncuestaList1() {
+//        return estructuraEncuestaList1;
+//    }
+//
+//    public void setEstructuraEncuestaList1(List<EstructuraEncuesta> estructuraEncuestaList1) {
+//        this.estructuraEncuestaList1 = estructuraEncuestaList1;
+//    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (susId != null ? susId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof SubSeccion)) {
+            return false;
+        }
+        SubSeccion other = (SubSeccion) object;
+        if ((this.susId == null && other.susId != null) || (this.susId != null && !this.susId.equals(other.susId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.SubSeccion[ susId=" + susId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        return getSusId().toString();
+    }
+    
+}

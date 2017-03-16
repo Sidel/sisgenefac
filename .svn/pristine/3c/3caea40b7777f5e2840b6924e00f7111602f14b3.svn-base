@@ -1,0 +1,44 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Ubigeo;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("zonDao")
+@Transactional
+public class ZonificacionDaoImpl extends GenericDaoImpl<Ubigeo, String> implements ZonificacionDao {
+
+    public ZonificacionDaoImpl() {
+        super(Ubigeo.class);
+    }
+
+    @Override
+    public List<Ubigeo> findAll() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public List<String> findDepartamentos() {
+        List<String> rol = em.createQuery("select distinct u.ubiDepartamento from Ubigeo u")
+                .getResultList();
+        return rol;
+    }
+
+    @Override
+    public List<String> findProvinciasPorDep(String departamento) {
+        List<String> rol = em.createQuery("select distinct u.ubiProvincia from Ubigeo u where u.ubiDepartamento=:departamento")
+                .setParameter("departamento", departamento)
+                .getResultList();
+        return rol;
+    }
+
+    @Override
+    public List<String> findDistritoPorProv(String departamento, String provincia) {
+        List<String> rol = em.createQuery("select distinct u.ubiDistrito from Ubigeo u where u.ubiDepartamento=:departamento and u.ubiProvincia=:provincia")
+                .setParameter("departamento", departamento)
+                .setParameter("provincia",provincia )
+                .getResultList();
+        return rol;
+    }
+}

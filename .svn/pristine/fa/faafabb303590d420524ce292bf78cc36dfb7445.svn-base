@@ -1,0 +1,17 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.DetEncRpta;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface DetEncRptaService {
+    
+    public DetEncRpta getDetalleRespuesta(int idCabEncRpta, int idPregunta);
+    
+    // Servicio descabellado
+    public List<Object[]> getDetalleRptaPrimera(int idCabEncRpta);
+    
+}

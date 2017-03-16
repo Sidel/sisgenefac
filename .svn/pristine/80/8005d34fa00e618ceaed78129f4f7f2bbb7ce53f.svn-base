@@ -1,0 +1,231 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.util.List;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "direccion")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "Direccion.findAll", query = "SELECT d FROM Direccion d"),
+    @NamedQuery(name = "Direccion.findByDirId", query = "SELECT d FROM Direccion d WHERE d.dirId = :dirId"),
+    @NamedQuery(name = "Direccion.findByDirTipoUbicacion", query = "SELECT d FROM Direccion d WHERE d.dirTipoUbicacion = :dirTipoUbicacion"),
+    @NamedQuery(name = "Direccion.findByDirNumPuerta", query = "SELECT d FROM Direccion d WHERE d.dirNumPuerta = :dirNumPuerta"),
+    @NamedQuery(name = "Direccion.findByDirInt", query = "SELECT d FROM Direccion d WHERE d.dirInt = :dirInt"),
+    @NamedQuery(name = "Direccion.findByDirPiso", query = "SELECT d FROM Direccion d WHERE d.dirPiso = :dirPiso"),
+    @NamedQuery(name = "Direccion.findByDirEtapa", query = "SELECT d FROM Direccion d WHERE d.dirEtapa = :dirEtapa"),
+    @NamedQuery(name = "Direccion.findByDirSector", query = "SELECT d FROM Direccion d WHERE d.dirSector = :dirSector"),
+    @NamedQuery(name = "Direccion.findByDirGrupo", query = "SELECT d FROM Direccion d WHERE d.dirGrupo = :dirGrupo"),
+    @NamedQuery(name = "Direccion.findByDirManzana", query = "SELECT d FROM Direccion d WHERE d.dirManzana = :dirManzana"),
+    @NamedQuery(name = "Direccion.findByDirLote", query = "SELECT d FROM Direccion d WHERE d.dirLote = :dirLote"),
+    @NamedQuery(name = "Direccion.findByDirKm", query = "SELECT d FROM Direccion d WHERE d.dirKm = :dirKm")})
+public class Direccion extends AbstractEntity implements EntityItem<String> {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "dir_id")
+    private Integer dirId;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 20)
+    @Column(name = "dir_tipo_ubicacion")
+    private String dirTipoUbicacion;
+    @Column(name = "dir_num_puerta")
+    private Integer dirNumPuerta;
+    @Size(max = 10)
+    @Column(name = "dir_int")
+    private String dirInt;
+    @Column(name = "dir_piso")
+    private Integer dirPiso;
+    @Size(max = 50)
+    @Column(name = "dir_etapa")
+    private String dirEtapa;
+    @Size(max = 20)
+    @Column(name = "dir_sector")
+    private String dirSector;
+    @Size(max = 20)
+    @Column(name = "dir_grupo")
+    private String dirGrupo;
+    @Size(max = 20)
+    @Column(name = "dir_manzana")
+    private String dirManzana;
+    @Size(max = 20)
+    @Column(name = "dir_lote")
+    private String dirLote;
+    @Column(name = "dir_km")
+    private Integer dirKm;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "dirId")
+    private List<CabEncRpta> cabEncRptaList;
+
+    public Direccion() {
+    }
+
+    public Direccion(Integer dirId) {
+        this.dirId = dirId;
+    }
+
+    public Direccion(Integer dirId, String dirTipoUbicacion) {
+        this.dirId = dirId;
+        this.dirTipoUbicacion = dirTipoUbicacion;
+    }
+
+    public Integer getDirId() {
+        return dirId;
+    }
+
+    public void setDirId(Integer dirId) {
+        this.dirId = dirId;
+    }
+
+    public String getDirTipoUbicacion() {
+        return dirTipoUbicacion;
+    }
+
+    public void setDirTipoUbicacion(String dirTipoUbicacion) {
+        this.dirTipoUbicacion = dirTipoUbicacion;
+    }
+
+    public Integer getDirNumPuerta() {
+        return dirNumPuerta;
+    }
+
+    public void setDirNumPuerta(Integer dirNumPuerta) {
+        this.dirNumPuerta = dirNumPuerta;
+    }
+
+    public String getDirInt() {
+        return dirInt;
+    }
+
+    public void setDirInt(String dirInt) {
+        this.dirInt = dirInt;
+    }
+
+    public Integer getDirPiso() {
+        return dirPiso;
+    }
+
+    public void setDirPiso(Integer dirPiso) {
+        this.dirPiso = dirPiso;
+    }
+
+    public String getDirEtapa() {
+        return dirEtapa;
+    }
+
+    public void setDirEtapa(String dirEtapa) {
+        this.dirEtapa = dirEtapa;
+    }
+
+    public String getDirSector() {
+        return dirSector;
+    }
+
+    public void setDirSector(String dirSector) {
+        this.dirSector = dirSector;
+    }
+
+    public String getDirGrupo() {
+        return dirGrupo;
+    }
+
+    public void setDirGrupo(String dirGrupo) {
+        this.dirGrupo = dirGrupo;
+    }
+
+    public String getDirManzana() {
+        return dirManzana;
+    }
+
+    public void setDirManzana(String dirManzana) {
+        this.dirManzana = dirManzana;
+    }
+
+    public String getDirLote() {
+        return dirLote;
+    }
+
+    public void setDirLote(String dirLote) {
+        this.dirLote = dirLote;
+    }
+
+    public Integer getDirKm() {
+        return dirKm;
+    }
+
+    public void setDirKm(Integer dirKm) {
+        this.dirKm = dirKm;
+    }
+
+    @XmlTransient
+    public List<CabEncRpta> getCabEncRptaList() {
+        return cabEncRptaList;
+    }
+
+    public void setCabEncRptaList(List<CabEncRpta> cabEncRptaList) {
+        this.cabEncRptaList = cabEncRptaList;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (dirId != null ? dirId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof Direccion)) {
+            return false;
+        }
+        Direccion other = (Direccion) object;
+        if ((this.dirId == null && other.dirId != null) || (this.dirId != null && !this.dirId.equals(other.dirId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.Direccion[ dirId=" + dirId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+}

@@ -1,0 +1,7 @@
+package com.fabrica.sisgene.domain;
+
+public interface EntityItem<T> {
+    
+    public T getId();
+    
+}

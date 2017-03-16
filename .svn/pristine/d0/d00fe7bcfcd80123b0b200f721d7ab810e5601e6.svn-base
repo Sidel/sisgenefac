@@ -1,0 +1,17 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Rol;
+import java.util.List;
+
+public interface RolDao extends GenericDao<Rol, String> {
+
+    public List<Rol> findAll();
+    
+    public List<Rol> encontrarTodo();
+
+    public Rol findByRolId(int idRol);
+
+    public Rol findByRolCodigo(String codigo);
+
+    public Rol findByRolDescripcion(String desc);
+}

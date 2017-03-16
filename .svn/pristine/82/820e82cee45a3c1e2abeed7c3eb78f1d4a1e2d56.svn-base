@@ -1,0 +1,73 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.AccesoDao;
+import com.fabrica.sisgene.dao.DetEncuestaDao;
+import com.fabrica.sisgene.dao.EstructuraDao;
+import com.fabrica.sisgene.dao.PreguntaDao;
+import com.fabrica.sisgene.dao.RolDao;
+import java.util.List;
+import com.fabrica.sisgene.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import java.text.SimpleDateFormat;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+@Service("detEncuestaService")
+public class DetEncuestaServiceImpl extends AbstractService implements DetEncuestaService {
+
+    @Autowired
+    protected RolDao rolDao;
+
+    @Autowired
+    protected AccesoDao accDao;
+
+    @Autowired
+    protected DetEncuestaDao detDao;
+    
+    @Autowired
+    protected EstructuraDao estServ;
+    
+    @Autowired
+    protected PreguntaDao pregDao;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+    public DetEncuestaServiceImpl() {
+        super();
+    }
+
+    @Override
+    public Result<List<DetEncuesta>> finbyEncuesta(CaratulaEncuesta car) {
+        return ResultFactory.getSuccessResult(detDao.findByEncuesta(car));
+    }
+
+    @Override
+    public boolean eliminar(int idPreg) {
+        try {
+            DetEncuesta det = detDao.findByEncuesta(idPreg);
+
+            if (det == null) {
+                return false;
+            } else {
+                detDao.remove(det);
+                estServ.remove(det.getEseId());
+                pregDao.remove(det.getEseId().getPreId());
+                return true;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+    
+    @Override
+    public Result<List<Object[]>> findByDetalleEncuesta(CaratulaEncuesta car, int unica_persona, String categoria) {
+        return ResultFactory.getSuccessResult(detDao.findByDetalleEncuesta(car, unica_persona, categoria));
+    }
+    
+}

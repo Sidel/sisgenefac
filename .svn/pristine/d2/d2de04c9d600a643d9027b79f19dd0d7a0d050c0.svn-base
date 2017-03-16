@@ -1,0 +1,50 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Persona;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("personaDao")
+@Transactional
+public class PersonaDaoImpl extends GenericDaoImpl<Persona, String> implements PersonaDao {
+
+    public PersonaDaoImpl() {
+        super(Persona.class);
+    }
+    
+    @Override
+    public boolean guardar(Persona per){
+       try{
+        em.persist(per);
+        em.flush();
+        return true;
+        }catch(Exception e){
+            e.printStackTrace();
+            return false;
+        }
+       
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Persona findByPerId(int id) {
+
+        List<Persona> rol = em.createNamedQuery("Persona.findByPerId")
+                .setParameter("perId", id)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Persona findByPerNumDocumento(String nomDuc) {
+        List<Persona> rol = em.createNamedQuery("Persona.findByPerNumDocumento")
+                .setParameter("perNumDocumento", nomDuc)
+                .getResultList();
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+}

@@ -1,0 +1,28 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.CabEncRpta;
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface CabEncRptaService {
+
+//    public Result<Rol> guardar(String codigo,String nombre);
+    public Result<Integer> findByCodigo(UsuarioPersona up, CaratulaEncuesta ca);
+    
+    public Result<Integer> findByEncUsPer(UsuarioPersona up, CaratulaEncuesta ec);
+    
+    public Result<Integer> findByEncTot(UsuarioPersona up, CaratulaEncuesta ca);
+    
+    public Result<List<CabEncRpta>> findByEnc(CaratulaEncuesta ca);
+    
+    public Result<List<CabEncRpta>> findByEncuestas(String codigoEncuesta);
+    
+    public Result<Integer> contarEncuestasPorEstado(int idUsuPer, char estadoCabEncRpta);
+    
+}

@@ -1,0 +1,81 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("companyDao")
+@Transactional
+public class CaratulaEncuestaDaoImpl extends GenericDaoImpl<CaratulaEncuesta, Integer>
+        implements CaratulaEncuestaDao {
+
+    public CaratulaEncuestaDaoImpl() {
+        super(CaratulaEncuesta.class);
+    }
+    
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Object[]> findAll() {
+        List<Object[]> result = em.createNativeQuery(
+                " SELECT " +
+                " cae.cae_id, " +
+                " cae.cae_codigo, " +
+                " cae.cae_nombre, " +
+                " cae.cae_descripcion, " +
+                " cae.cae_finicio, " +
+                " cae.cae_ffin, " +
+                " cae.cae_estado, " +
+                " cae.cae_tipo_dispositivo, " +
+                " cae.cae_numero_encuestas_usu, " +
+                " cae.cae_logo_empresa, " +
+                " cae.cae_tot_supervisores, " +
+                        
+                " if ( DATE_FORMAT(NOW(),'%Y-%m-%d') <= DATE_FORMAT(cae.cae_ffin, '%Y-%m-%d'), 'ACTIVA', 'INACTIVA' ) as estado2 " +
+
+                " FROM Caratula_Encuesta cae " +
+                " order by cae.cae_finicio desc ").getResultList();
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Object[]> findNoExpiradas() {
+        List<Object[]> result = em.createNativeQuery(
+                " SELECT " +
+                " cae.cae_id, " +
+                " cae.cae_codigo, " +
+                " cae.cae_nombre, " +
+                " cae.cae_descripcion, " +
+                " cae.cae_finicio, " +
+                " cae.cae_ffin, " +
+                " cae.cae_estado, " +
+                " cae.cae_tipo_dispositivo, " +
+                " cae.cae_numero_encuestas_usu, " +
+                " cae.cae_logo_empresa, " +
+                " cae.cae_tot_supervisores, " +
+                        
+                " if ( DATE_FORMAT(NOW(),'%Y-%m-%d') <= DATE_FORMAT(cae.cae_ffin, '%Y-%m-%d'), 'ACTIVA', 'INACTIVA' ) as estado2 " +
+                        
+                " FROM Caratula_Encuesta cae " +
+                " WHERE DATE_FORMAT(NOW(),'%Y-%m-%d') <= DATE_FORMAT(cae.cae_ffin, '%Y-%m-%d') " +
+                " and cae.cae_estado = 'A' " +
+                " order by cae.cae_finicio desc ").getResultList();
+        return result;
+    }
+
+    @Override
+    public CaratulaEncuesta findByCodigo(String codigo) {
+        List<CaratulaEncuesta> result = em.createNamedQuery("CaratulaEncuesta.findByCaeCodigo")
+                .setParameter("caeCodigo", codigo)
+                .getResultList();
+        return (result.size() == 1 ? result.get(0) : null);
+    }
+
+    @Override
+    public List<CaratulaEncuesta> encontrarTodo() {
+        List<CaratulaEncuesta> result = em.createQuery("select ca from CaratulaEncuesta ca").getResultList();
+        return result;
+    }
+}

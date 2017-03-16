@@ -1,0 +1,127 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.util.List;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "item")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "Item.findAll", query = "SELECT i FROM Item i"),
+    @NamedQuery(name = "Item.findByIteId", query = "SELECT i FROM Item i WHERE i.iteId = :iteId"),
+    @NamedQuery(name = "Item.findByIteNombre", query = "SELECT i FROM Item i WHERE i.iteNombre = :iteNombre")})
+public class Item extends AbstractEntity implements EntityItem<String> {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "ite_id")
+    private Integer iteId;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 200)
+    @Column(name = "ite_nombre")
+    private String iteNombre;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "iteId")
+    private List<PreguntaItem> preguntaItemList;
+
+    public Item() {
+    }
+
+    public Item(Integer iteId) {
+        this.iteId = iteId;
+    }
+
+    public Item(Integer iteId, String iteNombre) {
+        this.iteId = iteId;
+        this.iteNombre = iteNombre;
+    }
+
+    public Integer getIteId() {
+        return iteId;
+    }
+
+    public void setIteId(Integer iteId) {
+        this.iteId = iteId;
+    }
+
+    public String getIteNombre() {
+        return iteNombre;
+    }
+
+    public void setIteNombre(String iteNombre) {
+        this.iteNombre = iteNombre;
+    }
+
+    @XmlTransient
+    public List<PreguntaItem> getPreguntaItemList() {
+        return preguntaItemList;
+    }
+
+    public void setPreguntaItemList(List<PreguntaItem> preguntaItemList) {
+        this.preguntaItemList = preguntaItemList;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (iteId != null ? iteId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof Item)) {
+            return false;
+        }
+        Item other = (Item) object;
+        if ((this.iteId == null && other.iteId != null) || (this.iteId != null && !this.iteId.equals(other.iteId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.Item[ iteId=" + iteId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        return getIteId().toString();
+    }
+    
+}

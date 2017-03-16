@@ -1,0 +1,129 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.domain.*;
+import com.fabrica.sisgene.service.AccesoService;
+import com.fabrica.sisgene.service.RolService;
+import com.fabrica.sisgene.vo.Result;
+import static com.fabrica.sisgene.web.AbstractHandler.getJsonErrorMsg;
+import static com.fabrica.sisgene.web.AbstractHandler.toJsonString;
+import static com.fabrica.sisgene.web.SecurityHelper.getSessionUser;
+import java.util.List;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping("/accesos")
+public class AccesoHandler extends AbstractHandler {
+
+    @Autowired
+    protected AccesoService acceService;
+
+    @RequestMapping(value = "/{idAccesos}", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    public @ResponseBody
+    Object find(
+            @PathVariable(value = "idAccesos") Integer idAccesos,
+            HttpServletRequest request) {
+
+        Result<Acceso> ar = acceService.encontrar(idAccesos);
+
+        if (ar.isSuccess()) {
+            return getJsonSuccessData(ar.getData());
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.POST, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String store(
+            @RequestBody String jsonData,
+            HttpServletRequest request) {
+
+        System.out.println("" + jsonData);
+        JsonObject jsonObj = parseJsonObject(jsonData);
+
+        Result<Acceso> ar = acceService.guardar(
+                jsonObj.getString("rol"),
+                jsonObj.getString("estado"),
+                jsonObj.getString("funcionalidad"));
+
+        if (ar.isSuccess()) {
+
+            return getJsonSuccessData(ar.getData());
+
+        } else {
+
+            return getJsonErrorMsg(ar.getMsg());
+
+        }
+    }
+
+    @RequestMapping(value = "/{idAcc}", method = RequestMethod.DELETE, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String remove(
+            @PathVariable(value = "idAcc") Integer idAcc,
+            HttpServletRequest request) {
+
+        UsuarioPersona sessionUser = getSessionUser(request);
+
+        Result<Acceso> parametro = acceService.eliminar(
+                idAcc);
+
+        if (parametro.isSuccess()) {
+            return getJsonSuccessMsg(parametro.getMsg());
+
+        } else {
+
+            return getJsonErrorMsg(parametro.getMsg());
+
+        }
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String getCompanyTreeJson(HttpServletRequest request) {
+
+        Result<List<Acceso>> acces = acceService.encontrarTodo();
+
+        if (acces.isSuccess()) {
+
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("success", true);
+
+            JsonArrayBuilder projectChildrenArrayBuilder = Json.createArrayBuilder();
+
+            for (Acceso acce : acces.getData()) {
+
+                projectChildrenArrayBuilder.add(
+                        Json.createObjectBuilder()
+                        .add("id", acce.getFunId().getFunId())
+                        .add("descripcion", acce.getFunId().getFunNombre())
+                );
+
+            }
+
+            builder.add("accesos", projectChildrenArrayBuilder);
+
+            return toJsonString(builder.build());
+
+        } else {
+
+            return getJsonErrorMsg(acces.getMsg());
+
+        }
+    }
+
+}

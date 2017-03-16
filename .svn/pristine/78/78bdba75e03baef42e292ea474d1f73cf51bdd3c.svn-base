@@ -1,0 +1,372 @@
+package com.fabrica.sisgene.service;
+
+//import com.fabrica.sisgene.dao.TaskLogDao;
+import com.fabrica.sisgene.dao.CaratulaEncuestaDao;
+import com.fabrica.sisgene.dao.DispositivoDao;
+import com.fabrica.sisgene.dao.GrupoDao;
+import com.fabrica.sisgene.dao.PersonaDao;
+import com.fabrica.sisgene.domain.Usuario;
+import com.fabrica.sisgene.dao.RolDao;
+import com.fabrica.sisgene.dao.TipoDocumentoDao;
+import com.fabrica.sisgene.dao.UbigeoDao;
+import com.fabrica.sisgene.dao.UsuarioPersonaDao;
+import java.util.List;
+import com.fabrica.sisgene.domain.*;
+import com.fabrica.sisgene.util.Criptografo;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+@Service("usuarioEncuestaService")
+public class UsuarioEncuestaServiceImpl extends AbstractService implements UsuarioEncuestaService {
+
+    @Autowired
+    protected RolDao rolDao;
+
+    @Autowired
+    protected CaratulaEncuestaDao carEncDao;
+
+    @Autowired
+    protected TipoDocumentoDao tipDocDao;
+
+    @Autowired
+    protected PersonaDao perDao;
+
+    @Autowired
+    protected DispositivoDao disDao;
+
+    @Autowired
+    protected GrupoDao grupoDao;
+
+    @Autowired
+    protected UsuarioPersonaDao usuEncDao;
+
+    @Autowired
+    protected UbigeoDao ubiDao;
+
+    Criptografo cripto;
+
+    public UsuarioEncuestaServiceImpl() {
+        super();
+    }
+    /*
+     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+     @Override
+     public Result<UsuarioEncuesta> find(String username, String actionUsername) {
+
+     if (isValidUser(actionUsername)) {
+
+     Usuario user = usuEncDao.findByUsernamePassword(username, actionUsername);
+     return ResultFactory.getSuccessResult(user);
+
+     } else {
+     return ResultFactory.getFailResult(USER_INVALID);
+     }
+     }
+     */
+//
+//    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+//    @Override
+//    public Result<UsuarioEncuesta> store(
+//            int idCaratulaEncuesta,
+//            String perNumDocumento,
+//            String perNombres,
+//            String perApPaterno,
+//            String perApMaterno,
+//            int idTipDoc,
+//            int encuestasDesde,
+//            int encuestasHasta,
+//            int ubigeoId,
+//            String usuEstado,
+//            int grupo,
+//            int idRol,
+//            String equipo,
+//            String equipoMarca,
+//            String equipoNroSerie,
+//            String clave,
+//            String username) {
+//
+//        System.out.println("entro a guardar usuarioooo");
+//        CaratulaEncuesta carEnc = carEncDao.find(idCaratulaEncuesta);
+//        System.out.println("entro 0");
+//        UsuarioEncuesta usuarioEnc = new UsuarioEncuesta();
+//        Usuario usu = new Usuario();
+//        System.out.println("entro 1");
+//        if (carEnc == null) {
+//            return ResultFactory.getFailResult("No se encontro la Encuesta asignada a este usuario");
+//        } else {
+//            usuarioEnc.setCaeId(carEnc);
+//            System.out.println("entro 12");
+//            Rol rol = rolDao.findByRolId(idRol);
+//            System.out.println("entro 13");
+//            if (rol == null) {
+//                return ResultFactory.getFailResult("No se encontro el Rol asignado a este usuario");
+//            } else {
+//                TipoDocumento t = new TipoDocumento();
+//                t = tipDocDao.findByTipDocumentoId(idTipDoc);
+//                System.out.println("entro 14");
+//                if (t == null) {
+//                    return ResultFactory.getFailResult("No se encontro el Tipo de Documento asignado a este usuario");
+//                } else {
+//                    Ubigeo ub = ubiDao.findByUbigeoId(ubigeoId);
+//
+//                    if (ub == null) {
+//                        return ResultFactory.getFailResult("No se encontro el Ubigeo");
+//                    } else {
+//                        System.out.println("entro 15");
+//                        Persona per = new Persona();
+//                        per.setPerId(2);
+//                        per.setPerNombres(perNombres);
+//                        per.setPerapPaterno(perApPaterno);
+//                        per.setPerapMaterno(perApMaterno);
+//                        per.setPerNumDocumento(perNumDocumento);
+//                        per.setTipId(t);
+//                        try {
+//                            System.out.println("entro 161");
+//                            //perDao.persist(per);+
+//                            perDao.guardar(per);
+//                            System.out.println("entro 16");
+//                            usu.setRolId(rol);
+//                            usu.setUsuId(1);
+//                            //usu.setUsuGrupo(grupo);
+//                            cripto = new Criptografo();
+//                            usu.setUsuClave(cripto.encripta(clave));
+////                            usu.setPerId(perDao.findByPerNumDocumento(perNumDocumento));
+////                            usu.setUsuEstado('A');
+//                            usu.setUsuUsuario(username);
+//
+//                            userDao.persist(usu);
+//                            System.out.println("guardi usuario");
+//                            usuarioEnc.setUseId(1);
+//                            usuarioEnc.setUbiId(ub);
+//                            usuarioEnc.setUsuId(usu);
+//                            usuarioEnc.setUsedesdenumEnc(encuestasDesde);
+//                            usuarioEnc.setUsehastanumEnc(encuestasHasta);
+//                            System.out.println("carEnc.getCaeNumeroEncuestasUsu():" + carEnc.getCaeNumeroEncuestasUsu());
+//                            usuarioEnc.setUsetotencAsignadas(carEnc.getCaeNumeroEncuestasUsu());
+//
+//                            Grupo grup = new Grupo(1);
+//                            usuarioEnc.setGruId(grup);
+//
+//                            Dispositivo disp = new Dispositivo();
+//                            disp.setDisNombre(equipo);
+//                            disp.setDisId(1);
+//                            disp.setDisMarca(equipoMarca);
+//                            disp.setDisSerie(equipoNroSerie);
+//                            disp.setDisModelo(equipoMarca);
+//                            System.out.println("antes de guardi disp");
+//                            disDao.guardar(disp);
+//                            System.out.println("guardi disp");
+//                            Dispositivo di = disDao.findByDisSerie(equipoNroSerie);
+//                            if (di == null) {
+//
+//                                return ResultFactory.getFailResult("Error: No se registro Dispositivo");
+//                            } else {
+//                                usuarioEnc.setDisId(di);
+//                                System.out.println("encontro dispp");
+//                                Grupo gr = grupoDao.findByGrupoId(grupo);
+//                                if (gr == null) {
+//                                    usuarioEnc.setGruId(gr);
+//                                } else {
+//                                    usuarioEnc.setGruId(gr);
+//                                }
+//                                Usuario usuar = userDao.findByUsername(username);
+//                                if (usuar == null) {
+//                                    return ResultFactory.getFailResult("Error");
+//                                } else {
+//                                    usuarioEnc.setUsuId(usuar);
+//                                    System.out.println("encontro usuario");
+//                                    usuEncDao.persist(usuarioEnc);
+//                                    System.out.println("guardi ok");
+//                                    return ResultFactory.getSuccessResult(usuarioEnc);
+//                                }
+//                            }
+//
+//                        } catch (Exception e) {
+//                            return ResultFactory.getFailResult("Error");
+//                        }
+//
+//                    }
+//
+//                }
+//
+//            }
+//
+//        }
+//        // we will store username/email values in lowercase
+//        //username = username.trim();
+//        //email = email.trim();
+//
+//        // test if the user is already in the system
+//        //Usuario user = userDao.findByUsername(username);
+//        // see if the user can be found by email
+//        //Usuario testByEmailUser = userDao.findByEmail(email);
+////        boolean doInsert = false;
+////
+////        if (user == null) {
+////            doInsert = true;
+////        } else {
+////
+////            // the user being modified is different to the user that has this email address
+////            return ResultFactory.getFailResult("El usuario ya esta siendo usado");
+////
+////        }
+////
+////        user.setUsuUsuario(username);
+////        user.setUsuClave(password);
+////        user.setUsuEstado(estado.charAt(0));
+////        user.setUsuGrupo(grupo);
+////        user.setRolId(rolDao.findByRolId(idRol));
+////
+////        if (doInsert) {
+////
+////            userDao.persist(user);
+////
+////        }/* else {
+////         user = userDao.merge(user);
+////
+////         }
+////         
+//    }
+//
+//    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+//    @Override
+//    public Result<UsuarioEncuesta> remove(String username, String actionUsername) {
+//
+//        Usuario actionUser = userDao.find(actionUsername);
+//        /*
+//         if (!actionUser.isAdmin()) {
+//
+//         return ResultFactory.getFailResult(USER_NOT_ADMIN);
+//
+//         }
+//         */
+//        if (actionUsername.equalsIgnoreCase(username)) {
+//
+//            return ResultFactory.getFailResult("It is not allowed to delete yourself!");
+//
+//        }
+//
+//        if (username == null) {
+//
+//            return ResultFactory.getFailResult("Unable to remove null User");
+//
+//        }
+//
+//        Usuario user = userDao.findByUsername(username);
+//
+//        //long taskLogCount = taskLogDao.findTaskLogCountByUser(user);
+//        if (user == null) {
+//
+//            return ResultFactory.getFailResult("Unable to load User for removal with username=" + username);
+//
+//        } else /* if(taskLogCount > 0) {
+//
+//         // tasks have logs assigned: not allowed to delete
+//         return ResultFactory.getFailResult("Unable to remove User with username=" + username + " as valid task logs are assigned");
+//
+//         } else {
+//         */ {
+//            userDao.remove(user);
+//        }
+//        String msg = "User " + username + " was deleted by " + actionUsername;
+//        logger.info(msg);
+//        return ResultFactory.getSuccessResultMsg(msg);
+//
+//        // }
+//    }
+//
+//    @Override
+//    public Result<UsuarioEncuesta> remove(int idUsuarioEnc) {
+//
+//        UsuarioEncuesta actionUser = usuEncDao.findById(idUsuarioEnc);
+//        if (actionUser == null) {
+//            return ResultFactory.getFailResult("No se puede eliminar Usuario de Encuesta[null idUsuarioEnc]");
+//        } else {
+//            usuEncDao.remove(actionUser);
+//            String msg = "Encuesta " + actionUser.getUsuId() + " was deleted";
+//            logger.info(msg);
+//            return ResultFactory.getSuccessResultMsg(msg);
+//        }
+//    }
+//    /*
+//     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+//     @Override
+//     public Result<List<UsuarioEncuesta>> findAll(String actionUsername) {
+//
+//     if (isValidUser(actionUsername)) {
+//
+//     return ResultFactory.getSuccessResult(userDao.findAll());
+//
+//     } else {
+//     return ResultFactory.getFailResult(USER_INVALID);
+//     }
+//
+//     }
+//
+//     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+//     @Override
+//     public Result<UsuarioEncuesta> findByUsernamePassword(String username, String password) {
+//
+//     Usuario user = userDao.findByUsernamePassword(username, password);
+//
+//     if (user == null) {
+//
+//     return ResultFactory.getFailResult("Unable to verify user/password combination!");
+//
+//     } else {
+//
+//     return ResultFactory.getSuccessResult(user);
+//     }
+//
+//     }*/
+//
+//    @Override
+//    public Result<List<UsuarioEncuesta>> findAll(String actionUsername) {
+//        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+//    }
+//
+//    @Override
+//    public Result<UsuarioEncuesta> update(int idUsuarioEnc, String perNumDocumento,
+//            String perNombres, String perApPaterno, String perApMaterno, int ubigeoId,
+//            int grupo, int idRol, String equipo, String equipoMarca, String equipoNroSerie, String clave) {
+//
+//        UsuarioEncuesta usuario = usuEncDao.findById(idUsuarioEnc);
+//        if (usuario == null) {
+//            return ResultFactory.getFailResult("No se Usuario de Encuesta con ID=" + idUsuarioEnc);
+//        } else {
+//            Usuario usu = usuario.getUsuId();
+////            Persona per = usu.getPerId();
+////            per.setPerNombres(perNombres);
+////            per.setPerNumDocumento(perNumDocumento);
+////            per.setPerapPaterno(perApPaterno);
+////            per.setPerapMaterno(perApMaterno);
+////            perDao.merge(per);
+//
+//            Ubigeo ubi = ubiDao.findByUbigeoId(ubigeoId);
+//            usuario.setUbiId(ubi);
+//
+//            Rol rol = rolDao.findByRolId(idRol);
+//            usu = usuario.getUsuId();
+//            usu.setUsuClave(cripto.encripta(clave));
+//            usu.setRolId(rol);
+//
+//            Dispositivo disp = usuario.getDisId();
+//            disp.setDisNombre(equipo);
+//            disp.setDisMarca(equipoMarca);
+//            disp.setDisSerie(equipoNroSerie);
+//            disDao.merge(disp);
+//            usuEncDao.merge(usuario);
+//            
+//            String msg = "Usuario de encuesta was deleted";
+//            logger.info(msg);
+//            return ResultFactory.getSuccessResult(usuario);
+//            
+//        }
+//
+//    }
+}

@@ -1,0 +1,578 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "cab_enc_rpta")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "CabEncRpta.findAll", query = "SELECT c FROM CabEncRpta c"),
+    @NamedQuery(name = "CabEncRpta.findByCaerId", query = "SELECT c FROM CabEncRpta c WHERE c.caerId = :caerId"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNumeroEncuesta", query = "SELECT c FROM CabEncRpta c WHERE c.caerNumeroEncuesta = :caerNumeroEncuesta"),
+    @NamedQuery(name = "CabEncRpta.findByCaerEstado", query = "SELECT c FROM CabEncRpta c WHERE c.caerEstado = :caerEstado"),
+    @NamedQuery(name = "CabEncRpta.findByCaerFencuesta", query = "SELECT c FROM CabEncRpta c WHERE c.caerFencuesta = :caerFencuesta"),
+    @NamedQuery(name = "CabEncRpta.findByCaerObservaciones", query = "SELECT c FROM CabEncRpta c WHERE c.caerObservaciones = :caerObservaciones"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNconglomerado", query = "SELECT c FROM CabEncRpta c WHERE c.caerNconglomerado = :caerNconglomerado"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNzonaAer", query = "SELECT c FROM CabEncRpta c WHERE c.caerNzonaAer = :caerNzonaAer"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNmanzana", query = "SELECT c FROM CabEncRpta c WHERE c.caerNmanzana = :caerNmanzana"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNvivienda", query = "SELECT c FROM CabEncRpta c WHERE c.caerNvivienda = :caerNvivienda"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNhogar", query = "SELECT c FROM CabEncRpta c WHERE c.caerNhogar = :caerNhogar"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNarea", query = "SELECT c FROM CabEncRpta c WHERE c.caerNarea = :caerNarea"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNcondicion", query = "SELECT c FROM CabEncRpta c WHERE c.caerNcondicion = :caerNcondicion"),
+    @NamedQuery(name = "CabEncRpta.findByCaerCodigoInformante", query = "SELECT c FROM CabEncRpta c WHERE c.caerCodigoInformante = :caerCodigoInformante"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNombreInformante", query = "SELECT c FROM CabEncRpta c WHERE c.caerNombreInformante = :caerNombreInformante"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNombreEncuestado", query = "SELECT c FROM CabEncRpta c WHERE c.caerNombreEncuestado = :caerNombreEncuestado"),
+    @NamedQuery(name = "CabEncRpta.findByCaerFvisita1", query = "SELECT c FROM CabEncRpta c WHERE c.caerFvisita1 = :caerFvisita1"),
+    @NamedQuery(name = "CabEncRpta.findByCaerFvisita2", query = "SELECT c FROM CabEncRpta c WHERE c.caerFvisita2 = :caerFvisita2"),
+    @NamedQuery(name = "CabEncRpta.findByCaerFvisita3", query = "SELECT c FROM CabEncRpta c WHERE c.caerFvisita3 = :caerFvisita3"),
+    @NamedQuery(name = "CabEncRpta.findByCaerCodigoDigitador", query = "SELECT c FROM CabEncRpta c WHERE c.caerCodigoDigitador = :caerCodigoDigitador"),
+    @NamedQuery(name = "CabEncRpta.findByCaerMaquinaDigitador", query = "SELECT c FROM CabEncRpta c WHERE c.caerMaquinaDigitador = :caerMaquinaDigitador"),
+    @NamedQuery(name = "CabEncRpta.findByCaerFdigitacion", query = "SELECT c FROM CabEncRpta c WHERE c.caerFdigitacion = :caerFdigitacion"),
+    @NamedQuery(name = "CabEncRpta.findByCaerCodigoSupervisor", query = "SELECT c FROM CabEncRpta c WHERE c.caerCodigoSupervisor = :caerCodigoSupervisor"),
+    @NamedQuery(name = "CabEncRpta.findByCaerFsupervision1", query = "SELECT c FROM CabEncRpta c WHERE c.caerFsupervision1 = :caerFsupervision1"),
+    @NamedQuery(name = "CabEncRpta.findByCaerFsupervision2", query = "SELECT c FROM CabEncRpta c WHERE c.caerFsupervision2 = :caerFsupervision2"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNtipoSupervision1", query = "SELECT c FROM CabEncRpta c WHERE c.caerNtipoSupervision1 = :caerNtipoSupervision1"),
+    @NamedQuery(name = "CabEncRpta.findByCaerNtipoSupervision2", query = "SELECT c FROM CabEncRpta c WHERE c.caerNtipoSupervision2 = :caerNtipoSupervision2"),
+    @NamedQuery(name = "CabEncRpta.findByCaerfhHorainicio", query = "SELECT c FROM CabEncRpta c WHERE c.caerfhHorainicio = :caerfhHorainicio"),
+    @NamedQuery(name = "CabEncRpta.findByCaerfhHorafin", query = "SELECT c FROM CabEncRpta c WHERE c.caerfhHorafin = :caerfhHorafin"),
+    @NamedQuery(name = "CabEncRpta.findByCaerTiempo", query = "SELECT c FROM CabEncRpta c WHERE c.caerTiempo = :caerTiempo"),
+    @NamedQuery(name = "CabEncRpta.findByCaerObservacionSupervisor", query = "SELECT c FROM CabEncRpta c WHERE c.caerObservacionSupervisor = :caerObservacionSupervisor"),
+    @NamedQuery(name = "CabEncRpta.findByCaercodigocentroPoblado", query = "SELECT c FROM CabEncRpta c WHERE c.caercodigocentroPoblado = :caercodigocentroPoblado"),
+    @NamedQuery(name = "CabEncRpta.findByCaernombrecentroPoblado", query = "SELECT c FROM CabEncRpta c WHERE c.caernombrecentroPoblado = :caernombrecentroPoblado"),
+    @NamedQuery(name = "CabEncRpta.findByCaercategoriacentroPoblado", query = "SELECT c FROM CabEncRpta c WHERE c.caercategoriacentroPoblado = :caercategoriacentroPoblado"),
+    @NamedQuery(name = "CabEncRpta.findByCaerbEnviada", query = "SELECT c FROM CabEncRpta c WHERE c.caerbEnviada = :caerbEnviada"),
+    @NamedQuery(name = "CabEncRpta.findByCaerfEncuestaEnviada", query = "SELECT c FROM CabEncRpta c WHERE c.caerfEncuestaEnviada = :caerfEncuestaEnviada")})
+public class CabEncRpta extends AbstractEntity implements EntityItem<String>  {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "caer_id")
+    private Integer caerId;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 11)
+    @Column(name = "caer_numero_encuesta")
+    private String caerNumeroEncuesta;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "caer_estado")
+    private char caerEstado;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "caer_fencuesta")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerFencuesta;
+    @Size(max = 400)
+    @Column(name = "caer_observaciones")
+    private String caerObservaciones;
+    @Column(name = "caer_nconglomerado")
+    private Integer caerNconglomerado;
+    @Column(name = "caer_nzona_aer")
+    private Integer caerNzonaAer;
+    @Column(name = "caer_nmanzana")
+    private char caerNmanzana;
+    @Column(name = "caer_nvivienda")
+    private Integer caerNvivienda;
+    @Column(name = "caer_nhogar")
+    private Integer caerNhogar;
+    @Column(name = "caer_narea")
+    private Integer caerNarea;
+    @Column(name = "caer_ncondicion")
+    private Integer caerNcondicion;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 2)
+    @Column(name = "caer_codigo_informante")
+    private String caerCodigoInformante;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 50)
+    @Column(name = "caer_nombre_informante")
+    private String caerNombreInformante;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 100)
+    @Column(name = "caer_nombre_encuestado")
+    private String caerNombreEncuestado;
+    @Column(name = "caer_fvisita1")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerFvisita1;
+    @Column(name = "caer_fvisita2")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerFvisita2;
+    @Column(name = "caer_fvisita3")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerFvisita3;
+    @Size(max = 20)
+    @Column(name = "caer_codigo_digitador")
+    private String caerCodigoDigitador;
+    @Size(max = 50)
+    @Column(name = "caer_maquina_digitador")
+    private String caerMaquinaDigitador;
+    @Column(name = "caer_fdigitacion")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerFdigitacion;
+    @Size(max = 10)
+    @Column(name = "caer_codigo_supervisor")
+    private String caerCodigoSupervisor;
+    @Column(name = "caer_fsupervision1")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerFsupervision1;
+    @Column(name = "caer_fsupervision2")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerFsupervision2;
+    @Column(name = "caer_ntipo_supervision1")
+    private Integer caerNtipoSupervision1;
+    @Column(name = "caer_ntipo_supervision2")
+    private Integer caerNtipoSupervision2;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "caer_fhHora_inicio")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerfhHorainicio;
+    @Column(name = "caer_fhHora_fin")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerfhHorafin;
+    @Size(max = 5)
+    @Column(name = "caer_tiempo")
+    private String caerTiempo;
+    @Size(max = 500)
+    @Column(name = "caer_observacion_supervisor")
+    private String caerObservacionSupervisor;
+    @Size(max = 4)
+    @Column(name = "caer_codigo_centroPoblado")
+    private String caercodigocentroPoblado;
+    @Size(max = 60)
+    @Column(name = "caer_nombre_centroPoblado")
+    private String caernombrecentroPoblado;
+    @Size(max = 50)
+    @Column(name = "caer_categoria_centroPoblado")
+    private String caercategoriacentroPoblado;
+    @Column(name = "caer_bEnviada")
+    private Character caerbEnviada;
+    @Column(name = "caer_fEncuestaEnviada")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caerfEncuestaEnviada;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "caerId")
+    private List<Allegado> allegadoList;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "caerId")
+    private List<DetEncRpta> detEncRptaList;
+    @JoinColumn(name = "usp_id", referencedColumnName = "usp_id")
+    @ManyToOne(optional = false)
+    private UsuarioPersona uspId;
+    @JoinColumn(name = "dir_id", referencedColumnName = "dir_id")
+    @ManyToOne(optional = false)
+    private Direccion dirId;
+    @JoinColumn(name = "per_id", referencedColumnName = "per_id")
+    @ManyToOne(optional = false)
+    private Persona perId;
+
+    public CabEncRpta() {
+    }
+
+    public CabEncRpta(Integer caerId) {
+        this.caerId = caerId;
+    }
+
+    public CabEncRpta(Integer caerId, String caerNumeroEncuesta, char caerEstado, Date caerFencuesta, String caerCodigoInformante, String caerNombreInformante, String caerNombreEncuestado, Date caerfhHorainicio) {
+        this.caerId = caerId;
+        this.caerNumeroEncuesta = caerNumeroEncuesta;
+        this.caerEstado = caerEstado;
+        this.caerFencuesta = caerFencuesta;
+        this.caerCodigoInformante = caerCodigoInformante;
+        this.caerNombreInformante = caerNombreInformante;
+        this.caerNombreEncuestado = caerNombreEncuestado;
+        this.caerfhHorainicio = caerfhHorainicio;
+    }
+
+    public Integer getCaerId() {
+        return caerId;
+    }
+
+    public void setCaerId(Integer caerId) {
+        this.caerId = caerId;
+    }
+
+    public String getCaerNumeroEncuesta() {
+        return caerNumeroEncuesta;
+    }
+
+    public void setCaerNumeroEncuesta(String caerNumeroEncuesta) {
+        this.caerNumeroEncuesta = caerNumeroEncuesta;
+    }
+
+    public char getCaerEstado() {
+        return caerEstado;
+    }
+
+    public void setCaerEstado(char caerEstado) {
+        this.caerEstado = caerEstado;
+    }
+
+    public Date getCaerFencuesta() {
+        return caerFencuesta;
+    }
+
+    public void setCaerFencuesta(Date caerFencuesta) {
+        this.caerFencuesta = caerFencuesta;
+    }
+
+    public String getCaerObservaciones() {
+        return caerObservaciones;
+    }
+
+    public void setCaerObservaciones(String caerObservaciones) {
+        this.caerObservaciones = caerObservaciones;
+    }
+
+    public Integer getCaerNconglomerado() {
+        return caerNconglomerado;
+    }
+
+    public void setCaerNconglomerado(Integer caerNconglomerado) {
+        this.caerNconglomerado = caerNconglomerado;
+    }
+
+    public Integer getCaerNzonaAer() {
+        return caerNzonaAer;
+    }
+
+    public void setCaerNzonaAer(Integer caerNzonaAer) {
+        this.caerNzonaAer = caerNzonaAer;
+    }
+
+    public char getCaerNmanzana() {
+        return caerNmanzana;
+    }
+
+    public void setCaerNmanzana(char caerNmanzana) {
+        this.caerNmanzana = caerNmanzana;
+    }
+
+    public Integer getCaerNvivienda() {
+        return caerNvivienda;
+    }
+
+    public void setCaerNvivienda(Integer caerNvivienda) {
+        this.caerNvivienda = caerNvivienda;
+    }
+
+    public Integer getCaerNhogar() {
+        return caerNhogar;
+    }
+
+    public void setCaerNhogar(Integer caerNhogar) {
+        this.caerNhogar = caerNhogar;
+    }
+
+    public Integer getCaerNarea() {
+        return caerNarea;
+    }
+
+    public void setCaerNarea(Integer caerNarea) {
+        this.caerNarea = caerNarea;
+    }
+
+    public Integer getCaerNcondicion() {
+        return caerNcondicion;
+    }
+
+    public void setCaerNcondicion(Integer caerNcondicion) {
+        this.caerNcondicion = caerNcondicion;
+    }
+
+    public String getCaerCodigoInformante() {
+        return caerCodigoInformante;
+    }
+
+    public void setCaerCodigoInformante(String caerCodigoInformante) {
+        this.caerCodigoInformante = caerCodigoInformante;
+    }
+
+    public String getCaerNombreInformante() {
+        return caerNombreInformante;
+    }
+
+    public void setCaerNombreInformante(String caerNombreInformante) {
+        this.caerNombreInformante = caerNombreInformante;
+    }
+
+    public String getCaerNombreEncuestado() {
+        return caerNombreEncuestado;
+    }
+
+    public void setCaerNombreEncuestado(String caerNombreEncuestado) {
+        this.caerNombreEncuestado = caerNombreEncuestado;
+    }
+
+    public Date getCaerFvisita1() {
+        return caerFvisita1;
+    }
+
+    public void setCaerFvisita1(Date caerFvisita1) {
+        this.caerFvisita1 = caerFvisita1;
+    }
+
+    public Date getCaerFvisita2() {
+        return caerFvisita2;
+    }
+
+    public void setCaerFvisita2(Date caerFvisita2) {
+        this.caerFvisita2 = caerFvisita2;
+    }
+
+    public Date getCaerFvisita3() {
+        return caerFvisita3;
+    }
+
+    public void setCaerFvisita3(Date caerFvisita3) {
+        this.caerFvisita3 = caerFvisita3;
+    }
+
+    public String getCaerCodigoDigitador() {
+        return caerCodigoDigitador;
+    }
+
+    public void setCaerCodigoDigitador(String caerCodigoDigitador) {
+        this.caerCodigoDigitador = caerCodigoDigitador;
+    }
+
+    public String getCaerMaquinaDigitador() {
+        return caerMaquinaDigitador;
+    }
+
+    public void setCaerMaquinaDigitador(String caerMaquinaDigitador) {
+        this.caerMaquinaDigitador = caerMaquinaDigitador;
+    }
+
+    public Date getCaerFdigitacion() {
+        return caerFdigitacion;
+    }
+
+    public void setCaerFdigitacion(Date caerFdigitacion) {
+        this.caerFdigitacion = caerFdigitacion;
+    }
+
+    public String getCaerCodigoSupervisor() {
+        return caerCodigoSupervisor;
+    }
+
+    public void setCaerCodigoSupervisor(String caerCodigoSupervisor) {
+        this.caerCodigoSupervisor = caerCodigoSupervisor;
+    }
+
+    public Date getCaerFsupervision1() {
+        return caerFsupervision1;
+    }
+
+    public void setCaerFsupervision1(Date caerFsupervision1) {
+        this.caerFsupervision1 = caerFsupervision1;
+    }
+
+    public Date getCaerFsupervision2() {
+        return caerFsupervision2;
+    }
+
+    public void setCaerFsupervision2(Date caerFsupervision2) {
+        this.caerFsupervision2 = caerFsupervision2;
+    }
+
+    public Integer getCaerNtipoSupervision1() {
+        return caerNtipoSupervision1;
+    }
+
+    public void setCaerNtipoSupervision1(Integer caerNtipoSupervision1) {
+        this.caerNtipoSupervision1 = caerNtipoSupervision1;
+    }
+
+    public Integer getCaerNtipoSupervision2() {
+        return caerNtipoSupervision2;
+    }
+
+    public void setCaerNtipoSupervision2(Integer caerNtipoSupervision2) {
+        this.caerNtipoSupervision2 = caerNtipoSupervision2;
+    }
+
+    public Date getCaerfhHorainicio() {
+        return caerfhHorainicio;
+    }
+
+    public void setCaerfhHorainicio(Date caerfhHorainicio) {
+        this.caerfhHorainicio = caerfhHorainicio;
+    }
+
+    public Date getCaerfhHorafin() {
+        return caerfhHorafin;
+    }
+
+    public void setCaerfhHorafin(Date caerfhHorafin) {
+        this.caerfhHorafin = caerfhHorafin;
+    }
+
+    public String getCaerTiempo() {
+        return caerTiempo;
+    }
+
+    public void setCaerTiempo(String caerTiempo) {
+        this.caerTiempo = caerTiempo;
+    }
+
+    public String getCaerObservacionSupervisor() {
+        return caerObservacionSupervisor;
+    }
+
+    public void setCaerObservacionSupervisor(String caerObservacionSupervisor) {
+        this.caerObservacionSupervisor = caerObservacionSupervisor;
+    }
+
+    public String getCaercodigocentroPoblado() {
+        return caercodigocentroPoblado;
+    }
+
+    public void setCaercodigocentroPoblado(String caercodigocentroPoblado) {
+        this.caercodigocentroPoblado = caercodigocentroPoblado;
+    }
+
+    public String getCaernombrecentroPoblado() {
+        return caernombrecentroPoblado;
+    }
+
+    public void setCaernombrecentroPoblado(String caernombrecentroPoblado) {
+        this.caernombrecentroPoblado = caernombrecentroPoblado;
+    }
+
+    public String getCaercategoriacentroPoblado() {
+        return caercategoriacentroPoblado;
+    }
+
+    public void setCaercategoriacentroPoblado(String caercategoriacentroPoblado) {
+        this.caercategoriacentroPoblado = caercategoriacentroPoblado;
+    }
+
+    public Character getCaerbEnviada() {
+        return caerbEnviada;
+    }
+
+    public void setCaerbEnviada(Character caerbEnviada) {
+        this.caerbEnviada = caerbEnviada;
+    }
+
+    public Date getCaerfEncuestaEnviada() {
+        return caerfEncuestaEnviada;
+    }
+
+    public void setCaerfEncuestaEnviada(Date caerfEncuestaEnviada) {
+        this.caerfEncuestaEnviada = caerfEncuestaEnviada;
+    }
+
+    @XmlTransient
+    public List<Allegado> getAllegadoList() {
+        return allegadoList;
+    }
+
+    public void setAllegadoList(List<Allegado> allegadoList) {
+        this.allegadoList = allegadoList;
+    }
+
+    @XmlTransient
+    public List<DetEncRpta> getDetEncRptaList() {
+        return detEncRptaList;
+    }
+
+    public void setDetEncRptaList(List<DetEncRpta> detEncRptaList) {
+        this.detEncRptaList = detEncRptaList;
+    }
+
+    public UsuarioPersona getUspId() {
+        return uspId;
+    }
+
+    public void setUspId(UsuarioPersona uspId) {
+        this.uspId = uspId;
+    }
+
+    public Direccion getDirId() {
+        return dirId;
+    }
+
+    public void setDirId(Direccion dirId) {
+        this.dirId = dirId;
+    }
+
+    public Persona getPerId() {
+        return perId;
+    }
+
+    public void setPerId(Persona perId) {
+        this.perId = perId;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (caerId != null ? caerId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof CabEncRpta)) {
+            return false;
+        }
+        CabEncRpta other = (CabEncRpta) object;
+        if ((this.caerId == null && other.caerId != null) || (this.caerId != null && !this.caerId.equals(other.caerId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.CabEncRpta[ caerId=" + caerId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+}

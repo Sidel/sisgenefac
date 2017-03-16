@@ -1,0 +1,24 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.AccesoUtil;
+import com.fabrica.sisgene.domain.Rol;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface RolService {
+
+    public Result<Rol> guardar(String codigo,String nombre);
+    public Result<Rol> eliminar(int id);
+    public Result<Rol> encontrar(int id);
+    public Result<List<Rol>> encontrarTodo();
+    public Result<Rol> actualizar(
+            int idRol,
+            String codigo,
+            String nombre,
+            List<AccesoUtil> accesos);
+    
+}

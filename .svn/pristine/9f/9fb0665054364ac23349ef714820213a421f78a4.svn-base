@@ -1,0 +1,167 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "pregunta_opcion")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "PreguntaOpcion.findAll", query = "SELECT p FROM PreguntaOpcion p"),
+    @NamedQuery(name = "PreguntaOpcion.findByProId", query = "SELECT p FROM PreguntaOpcion p WHERE p.proId = :proId"),
+    @NamedQuery(name = "PreguntaOpcion.findByPronumeralOpcion", query = "SELECT p FROM PreguntaOpcion p WHERE p.pronumeralOpcion = :pronumeralOpcion"),
+    @NamedQuery(name = "PreguntaOpcion.findByPronumeroPreguntaSiguiente", query = "SELECT p FROM PreguntaOpcion p WHERE p.pronumeroPreguntaSiguiente = :pronumeroPreguntaSiguiente"),
+    @NamedQuery(name = "PreguntaOpcion.findByProValor", query = "SELECT p FROM PreguntaOpcion p WHERE p.proValor = :proValor")})
+public class PreguntaOpcion extends AbstractEntity implements EntityItem<String> {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "pro_id")
+    private Integer proId;
+    @Size(max = 10)
+    @Column(name = "pro_numeralOpcion")
+    private String pronumeralOpcion;
+    @Size(max = 4)
+    @Column(name = "pro_numeroPreguntaSiguiente")
+    private String pronumeroPreguntaSiguiente;
+    @Basic(optional = false)
+    @Column(name = "pro_valor")
+    private int proValor;
+    @JoinColumn(name = "pre_idEncuesta", referencedColumnName = "pre_id")
+    @ManyToOne(optional = false)
+    private Pregunta preidEncuesta;
+    @JoinColumn(name = "pre_id", referencedColumnName = "pre_id")
+    @ManyToOne(optional = false)
+    private Pregunta preId;
+    @JoinColumn(name = "opc_id", referencedColumnName = "opc_id")
+    @ManyToOne(optional = false)
+    private Opcion opcId;
+
+    public PreguntaOpcion() {
+    }
+
+    public PreguntaOpcion(Integer proId) {
+        this.proId = proId;
+    }
+    
+    public PreguntaOpcion(Integer proId, int proValor) {
+        this.proId = proId;
+        this.proValor = proValor;
+    }
+
+    public Integer getProId() {
+        return proId;
+    }
+
+    public void setProId(Integer proId) {
+        this.proId = proId;
+    }
+
+    public String getPronumeralOpcion() {
+        return pronumeralOpcion;
+    }
+
+    public void setPronumeralOpcion(String pronumeralOpcion) {
+        this.pronumeralOpcion = pronumeralOpcion;
+    }
+
+    public String getPronumeroPreguntaSiguiente() {
+        return pronumeroPreguntaSiguiente;
+    }
+
+    public void setPronumeroPreguntaSiguiente(String pronumeroPreguntaSiguiente) {
+        this.pronumeroPreguntaSiguiente = pronumeroPreguntaSiguiente;
+    }
+
+    public Pregunta getPreidEncuesta() {
+        return preidEncuesta;
+    }
+
+    public void setPreidEncuesta(Pregunta preidEncuesta) {
+        this.preidEncuesta = preidEncuesta;
+    }
+
+    public Pregunta getPreId() {
+        return preId;
+    }
+
+    public void setPreId(Pregunta preId) {
+        this.preId = preId;
+    }
+
+    public Opcion getOpcId() {
+        return opcId;
+    }
+
+    public void setOpcId(Opcion opcId) {
+        this.opcId = opcId;
+    }
+    
+    public int getProValor() {
+        return proValor;
+    }
+
+    public void setProValor(int proValor) {
+        this.proValor = proValor;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (proId != null ? proId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof PreguntaOpcion)) {
+            return false;
+        }
+        PreguntaOpcion other = (PreguntaOpcion) object;
+        if ((this.proId == null && other.proId != null) || (this.proId != null && !this.proId.equals(other.proId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.PreguntaOpcion[ proId=" + proId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        return getProId().toString();
+    }
+    
+}

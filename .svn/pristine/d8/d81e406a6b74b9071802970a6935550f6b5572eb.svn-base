@@ -1,0 +1,305 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "persona")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "Persona.findAll", query = "SELECT p FROM Persona p"),
+    @NamedQuery(name = "Persona.findByPerId", query = "SELECT p FROM Persona p WHERE p.perId = :perId"),
+    @NamedQuery(name = "Persona.findByPerNumDocumento", query = "SELECT p FROM Persona p WHERE p.perNumDocumento = :perNumDocumento"),
+    @NamedQuery(name = "Persona.findByPerNombres", query = "SELECT p FROM Persona p WHERE p.perNombres = :perNombres"),
+    @NamedQuery(name = "Persona.findByPerapPaterno", query = "SELECT p FROM Persona p WHERE p.perapPaterno = :perapPaterno"),
+    @NamedQuery(name = "Persona.findByPerapMaterno", query = "SELECT p FROM Persona p WHERE p.perapMaterno = :perapMaterno"),
+    @NamedQuery(name = "Persona.findByPerTelefono", query = "SELECT p FROM Persona p WHERE p.perTelefono = :perTelefono"),
+    @NamedQuery(name = "Persona.findByPerCelular", query = "SELECT p FROM Persona p WHERE p.perCelular = :perCelular"),
+    @NamedQuery(name = "Persona.findByPerCorreo", query = "SELECT p FROM Persona p WHERE p.perCorreo = :perCorreo"),
+    @NamedQuery(name = "Persona.findByPerFnacimiento", query = "SELECT p FROM Persona p WHERE p.perFnacimiento = :perFnacimiento"),
+    @NamedQuery(name = "Persona.findByPerEdad", query = "SELECT p FROM Persona p WHERE p.perEdad = :perEdad"),
+    @NamedQuery(name = "Persona.findByCatGradoInstruccion", query = "SELECT p FROM Persona p WHERE p.catGradoInstruccion = :catGradoInstruccion"),
+    @NamedQuery(name = "Persona.findByPerEstadoCivil", query = "SELECT p FROM Persona p WHERE p.perEstadoCivil = :perEstadoCivil"),
+    @NamedQuery(name = "Persona.findByPerGenero", query = "SELECT p FROM Persona p WHERE p.perGenero = :perGenero")})
+public class Persona extends AbstractEntity implements EntityItem<String> {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "per_id")
+    private Integer perId;
+    
+    @Basic(optional = false)
+    @NotNull(message = "nº documento")
+    @Size(min = 1, max = 20)
+    @Column(name = "per_num_documento")
+    private String perNumDocumento;
+    
+    @Basic(optional = false)
+    @NotNull(message = "nombre no nulo.")
+    @Size(min = 1, max = 50)
+    @Column(name = "per_nombres")
+    private String perNombres;
+    
+    @Basic(optional = false)
+    @NotNull(message = "apPaterno no nulo.")
+    @Size(min = 1, max = 50)
+    @Column(name = "per_apPaterno")
+    private String perapPaterno;
+    
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 50)
+    @Column(name = "per_apMaterno")
+    private String perapMaterno;
+    
+    @Size(max = 9)
+    @Column(name = "per_telefono")
+    private String perTelefono;
+    
+    @Size(max = 9)
+    @Column(name = "per_celular")
+    private String perCelular;
+    
+    @Size(max = 100)
+    @Column(name = "per_correo")
+    private String perCorreo;
+    
+    @Column(name = "per_fnacimiento")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date perFnacimiento;
+    
+    @Column(name = "per_edad")
+    private Integer perEdad;
+    
+    @Column(name = "cat_grado_instruccion")
+    private Integer catGradoInstruccion;
+    
+    @Column(name = "per_estado_civil")
+    private Integer perEstadoCivil;
+    
+    @Column(name = "per_genero")
+    private Character perGenero;
+    
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "perId")
+    private List<UsuarioPersona> usuarioPersonaList;
+    
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "perId")
+    private List<CabEncRpta> cabEncRptaList;
+    
+    @JoinColumn(name = "tip_id", referencedColumnName = "tip_id")
+    @ManyToOne(optional = false)
+    private TipoDocumento tipId;
+
+    public Persona() {
+    }
+
+    public Persona(Integer perId) {
+        this.perId = perId;
+    }
+
+    public Persona(Integer perId, String perNumDocumento, String perNombres, String perapPaterno, String perapMaterno) {
+        this.perId = perId;
+        this.perNumDocumento = perNumDocumento;
+        this.perNombres = perNombres;
+        this.perapPaterno = perapPaterno;
+        this.perapMaterno = perapMaterno;
+    }
+
+    public Integer getPerId() {
+        return perId;
+    }
+
+    public void setPerId(Integer perId) {
+        this.perId = perId;
+    }
+
+    public String getPerNumDocumento() {
+        return perNumDocumento;
+    }
+
+    public void setPerNumDocumento(String perNumDocumento) {
+        this.perNumDocumento = perNumDocumento;
+    }
+
+    public String getPerNombres() {
+        return perNombres;
+    }
+
+    public void setPerNombres(String perNombres) {
+        this.perNombres = perNombres;
+    }
+
+    public String getPerapPaterno() {
+        return perapPaterno;
+    }
+
+    public void setPerapPaterno(String perapPaterno) {
+        this.perapPaterno = perapPaterno;
+    }
+
+    public String getPerapMaterno() {
+        return perapMaterno;
+    }
+
+    public void setPerapMaterno(String perapMaterno) {
+        this.perapMaterno = perapMaterno;
+    }
+
+    public String getPerTelefono() {
+        return perTelefono;
+    }
+
+    public void setPerTelefono(String perTelefono) {
+        this.perTelefono = perTelefono;
+    }
+
+    public String getPerCelular() {
+        return perCelular;
+    }
+
+    public void setPerCelular(String perCelular) {
+        this.perCelular = perCelular;
+    }
+
+    public String getPerCorreo() {
+        return perCorreo;
+    }
+
+    public void setPerCorreo(String perCorreo) {
+        this.perCorreo = perCorreo;
+    }
+
+    public Date getPerFnacimiento() {
+        return perFnacimiento;
+    }
+
+    public void setPerFnacimiento(Date perFnacimiento) {
+        this.perFnacimiento = perFnacimiento;
+    }
+
+    public Integer getPerEdad() {
+        return perEdad;
+    }
+
+    public void setPerEdad(Integer perEdad) {
+        this.perEdad = perEdad;
+    }
+
+    public Integer getCatGradoInstruccion() {
+        return catGradoInstruccion;
+    }
+
+    public void setCatGradoInstruccion(Integer catGradoInstruccion) {
+        this.catGradoInstruccion = catGradoInstruccion;
+    }
+
+    public Integer getPerEstadoCivil() {
+        return perEstadoCivil;
+    }
+
+    public void setPerEstadoCivil(Integer perEstadoCivil) {
+        this.perEstadoCivil = perEstadoCivil;
+    }
+
+    public Character getPerGenero() {
+        return perGenero;
+    }
+
+    public void setPerGenero(Character perGenero) {
+        this.perGenero = perGenero;
+    }
+
+    @XmlTransient
+    public List<UsuarioPersona> getUsuarioPersonaList() {
+        return usuarioPersonaList;
+    }
+
+    public void setUsuarioPersonaList(List<UsuarioPersona> usuarioPersonaList) {
+        this.usuarioPersonaList = usuarioPersonaList;
+    }
+
+    @XmlTransient
+    public List<CabEncRpta> getCabEncRptaList() {
+        return cabEncRptaList;
+    }
+
+    public void setCabEncRptaList(List<CabEncRpta> cabEncRptaList) {
+        this.cabEncRptaList = cabEncRptaList;
+    }
+
+    public TipoDocumento getTipId() {
+        return tipId;
+    }
+
+    public void setTipId(TipoDocumento tipId) {
+        this.tipId = tipId;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (perId != null ? perId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof Persona)) {
+            return false;
+        }
+        Persona other = (Persona) object;
+        if ((this.perId == null && other.perId != null) || (this.perId != null && !this.perId.equals(other.perId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.Persona[ perId=" + perId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+}

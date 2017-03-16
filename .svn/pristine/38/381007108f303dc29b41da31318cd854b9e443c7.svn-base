@@ -1,0 +1,16 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import java.util.List;
+
+public interface CaratulaEncuestaDao extends GenericDao<CaratulaEncuesta, Integer>{
+
+    public List<Object[]> findAll();
+    
+    public List<Object[]> findNoExpiradas();
+    
+    public List<CaratulaEncuesta> encontrarTodo();
+    
+    public CaratulaEncuesta findByCodigo(String codigo);
+    
+}

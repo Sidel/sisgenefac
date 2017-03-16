@@ -1,0 +1,18 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.Pregunta;
+import com.fabrica.sisgene.domain.PreguntaOpcion;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface PreguntaOpcionService {
+
+    public Result<List<PreguntaOpcion>> finbyEncuesta(Pregunta preg);
+
+    public int contarNumeroOpciones(int idPregunta);
+    
+}

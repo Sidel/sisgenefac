@@ -1,0 +1,136 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "det_enc_rpta")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "DetEncRpta.findAll", query = "SELECT d FROM DetEncRpta d"),
+    @NamedQuery(name = "DetEncRpta.findByDeerId", query = "SELECT d FROM DetEncRpta d WHERE d.deerId = :deerId")})
+public class DetEncRpta extends AbstractEntity implements EntityItem<String> {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "deer_id")
+    private Integer deerId;
+    @Basic(optional = false)
+    @NotNull
+    @Lob
+    @Size(min = 1, max = 2147483647)
+    @Column(name = "deer_valor_respuesta")
+    private String deerValorRespuesta;
+    @JoinColumn(name = "pre_id", referencedColumnName = "pre_id")
+    @ManyToOne(optional = false)
+    private Pregunta preId;
+    @JoinColumn(name = "caer_id", referencedColumnName = "caer_id")
+    @ManyToOne(optional = false)
+    private CabEncRpta caerId;
+
+    public DetEncRpta() {
+    }
+
+    public DetEncRpta(Integer deerId) {
+        this.deerId = deerId;
+    }
+
+    public DetEncRpta(Integer deerId, String deerValorRespuesta) {
+        this.deerId = deerId;
+        this.deerValorRespuesta = deerValorRespuesta;
+    }
+
+    public Integer getDeerId() {
+        return deerId;
+    }
+
+    public void setDeerId(Integer deerId) {
+        this.deerId = deerId;
+    }
+
+    public String getDeerValorRespuesta() {
+        return deerValorRespuesta;
+    }
+
+    public void setDeerValorRespuesta(String deerValorRespuesta) {
+        this.deerValorRespuesta = deerValorRespuesta;
+    }
+
+    public Pregunta getPreId() {
+        return preId;
+    }
+
+    public void setPreId(Pregunta preId) {
+        this.preId = preId;
+    }
+
+    public CabEncRpta getCaerId() {
+        return caerId;
+    }
+
+    public void setCaerId(CabEncRpta caerId) {
+        this.caerId = caerId;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (deerId != null ? deerId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof DetEncRpta)) {
+            return false;
+        }
+        DetEncRpta other = (DetEncRpta) object;
+        if ((this.deerId == null && other.deerId != null) || (this.deerId != null && !this.deerId.equals(other.deerId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.DetEncRpta[ deerId=" + deerId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+}

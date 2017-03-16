@@ -1,0 +1,507 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.DetEncuestaDao;
+import com.fabrica.sisgene.dao.EstructuraDao;
+import com.fabrica.sisgene.dao.ItemDao;
+import com.fabrica.sisgene.dao.OpcionDao;
+import com.fabrica.sisgene.dao.PreguntaDao;
+import com.fabrica.sisgene.dao.PreguntaItemDao;
+import com.fabrica.sisgene.dao.PreguntaOpcionDao;
+import com.fabrica.sisgene.dao.SeccionDao;
+import com.fabrica.sisgene.dao.SubSeccionDao;
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Catalogo;
+import com.fabrica.sisgene.domain.DetEncuesta;
+import com.fabrica.sisgene.domain.EstructuraEncuesta;
+import com.fabrica.sisgene.domain.Item;
+import com.fabrica.sisgene.domain.Opcion;
+import com.fabrica.sisgene.domain.Pregunta;
+import com.fabrica.sisgene.domain.PreguntaItem;
+import com.fabrica.sisgene.domain.PreguntaOpcion;
+import com.fabrica.sisgene.domain.Seccion;
+import com.fabrica.sisgene.domain.SubSeccion;
+import static com.fabrica.sisgene.util.Constantes.RPTA_ABIERTA;
+import static com.fabrica.sisgene.util.Constantes.RPTA_MATRIZ_MULTIPLE;
+import static com.fabrica.sisgene.util.Constantes.RPTA_MATRIZ_SIMPLE;
+import static com.fabrica.sisgene.util.Constantes.RPTA_MIXTA;
+import static com.fabrica.sisgene.util.Constantes.RPTA_MULTIPLE;
+import static com.fabrica.sisgene.util.Constantes.RPTA_UNICA;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import com.google.common.base.Joiner;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonValue;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+
+@Transactional
+//@Service("parametroService")
+@Service("preguntaService")
+public class PreguntaServiceImpl extends AbstractService implements PreguntaService {
+
+    @Autowired
+    protected SeccionDao seccDao;
+
+    @Autowired
+    protected SubSeccionDao subSeccDao;
+
+    @Autowired
+    protected CaratulaEncuestaService carServ;
+
+    @Autowired
+    protected DetEncuestaDao detDao;
+
+    @Autowired
+    protected EstructuraDao estDao;
+
+    @Autowired
+    protected PreguntaDao pregDao;
+
+    @Autowired
+    protected CatalogoService catServ;
+
+    @Autowired
+    protected OpcionDao opciDao;
+
+    @Autowired
+    protected PreguntaOpcionDao pregOpcDao;
+    
+    @Autowired
+    protected ItemDao itemDao;
+
+    @Autowired
+    protected PreguntaItemDao pregitemDao;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+    public PreguntaServiceImpl() {
+        super();
+    }
+
+    @Override
+    public boolean eliminar(String encuesta, int idPreg) {
+        return true;
+    }
+
+    @Override
+    public Result<Pregunta> guardar(String encuesta,
+            int numero,
+            int seccion,
+            int subseccion,
+            String descripcion,
+            String comentario,
+            int pregunta_unica_persona,
+            int tipoId,
+            String desripcionTipo,
+            List<Map> filasS,
+            int numeroRespuestasMaximo,
+            boolean band,
+            List<Map> columnas) {
+        
+        try {
+            
+            CaratulaEncuesta car = carServ.findByCodigo(encuesta).getData();
+            Catalogo cat = catServ.encontrarPorGrupoSubGrupo(4, tipoId).getData();
+
+            Seccion secc = seccDao.encontrarPorEncuesta(car, seccion);
+            SubSeccion subss = null;
+            if (subseccion != 0) {
+                subss = subSeccDao.encontrarPorEncuestaSeccion(car, secc, subseccion);
+            }
+            Pregunta pregunta = new Pregunta();
+            pregunta.setPreId(1);
+            System.out.println("numero(PreguntaServiceImpl):" + numero);
+            pregunta.setPreNumero(String.valueOf(numero));
+            pregunta.setPreEnunciado(descripcion);
+            pregunta.setPreComentario(comentario);
+            pregunta.setPreUnicaPersona(pregunta_unica_persona);
+            pregunta.setPreTipoRpta(cat.getCatCodigo().toCharArray());
+            pregunta.setPreCantMaximaItems(12);
+
+            if(tipoId==6){
+                pregunta.setPremaxNumRptasMU(numeroRespuestasMaximo); 
+                pregunta.setPreimportaOrdenRptasMU(band?'1':'0'); 
+                pregunta.setPreGuiaRpta(Joiner.on(";").join(filasS)); 
+            }
+            if(tipoId==1||tipoId==2){
+                pregunta.setPreGuiaRpta(Joiner.on(";").join(filasS)); 
+            }
+            
+            pregDao.persist(pregunta);
+            System.out.println("id::" + pregunta.getPreId());
+
+            switch (tipoId) {
+                case 1: // RESPUESTA ÚNICA
+                    System.out.println("Pregunta Unica");
+                    int i = 1;
+                    for ( Map mapaOpcion : filasS ) {
+                        System.out.println("3::");
+                        Opcion opc = new Opcion();
+                        opc.setOpcId(2);
+                        opc.setOpcNombre(String.valueOf(mapaOpcion.get("opcion")));
+
+                        opciDao.persist(opc);
+                        System.out.println("4::");
+                        PreguntaOpcion pregOp = new PreguntaOpcion();
+                        pregOp.setOpcId(opc);
+                        pregOp.setPreId(pregunta);
+                        pregOp.setPronumeralOpcion(String.valueOf(i));
+                        pregOp.setProId(1);
+                        pregOp.setPronumeroPreguntaSiguiente("");
+                        pregOp.setProValor(Integer.parseInt(String.valueOf(mapaOpcion.get("valor"))));
+                        System.out.println("5::");
+                        pregOpcDao.persist(pregOp);
+
+                        i++;
+                    }
+
+                    break;
+                case 2: // RESPUESTA MÚLTIPLE
+                    System.out.println("Pregunta Multiple");
+
+                    int j = 1;
+                    for (Map mapaOpcion : filasS) {
+                        System.out.println("3::");
+                        Opcion opc = new Opcion();
+                        opc.setOpcId(2);
+                        opc.setOpcNombre(String.valueOf(mapaOpcion.get("opcion")));
+
+                        opciDao.persist(opc);
+                        System.out.println("4::");
+                        PreguntaOpcion pregOp = new PreguntaOpcion();
+                        pregOp.setOpcId(opc);
+                        pregOp.setPreId(pregunta);
+                        pregOp.setPronumeralOpcion(String.valueOf(j));
+                        pregOp.setProId(1);
+                        pregOp.setPronumeroPreguntaSiguiente("");
+                        pregOp.setProValor(Integer.parseInt(String.valueOf(mapaOpcion.get("valor"))));
+                        System.out.println("5::");
+                        pregOpcDao.persist(pregOp);
+
+                        j++;
+                    }
+                    break;
+                    
+                case 3: // RESPUESTA ABIERTA
+                    System.out.println("Pregunta Abierta");
+                    break;
+                    
+                case 4: // RESPUESTA MATRIZ SIMPLE
+                    System.out.println("Pregunta Matriz Simple");
+                    int k = 1;
+                    System.out.println("sizee filas:"+filasS.size());
+                    System.out.println("sizee columnas:"+columnas.size());
+                    
+                    for (Map mapaOpcion : filasS) {
+                        System.out.println("entra al FOR");
+                        Opcion opc = new Opcion();
+                        opc.setOpcId(2);
+                        System.out.println("OPCION:" + mapaOpcion.get("opcion"));
+                        opc.setOpcNombre(String.valueOf(mapaOpcion.get("opcion"))); 
+                        
+                        opciDao.persist(opc);
+                        System.out.println("opc id:" + opc.getOpcId());
+                        
+                        PreguntaOpcion pregOp = new PreguntaOpcion();
+                        pregOp.setOpcId(opc);
+                        pregOp.setPreId(pregunta);
+                        pregOp.setPronumeralOpcion(String.valueOf(k));
+                        pregOp.setProId(1);
+                        pregOp.setPronumeroPreguntaSiguiente("");
+                        pregOpcDao.persist(pregOp);
+                        System.out.println("pregOpc id:" + pregOp.getProId());
+
+                        k++;
+                    }
+
+                    int o = 1;
+                    for (Map mapaColumna : columnas) {
+                        Item opc = new Item();
+                        opc.setIteId(2);
+                        opc.setIteNombre(String.valueOf(mapaColumna.get("opcion")));
+                        itemDao.persist(opc);
+                        
+                        PreguntaItem pregOp = new PreguntaItem();
+                        pregOp.setIteId(opc);
+                        pregOp.setPreId(pregunta);
+                        pregOp.setPrinumeralItem(o);
+                        pregOp.setPriId(2); 
+                        pregOp.setPriValor(Integer.parseInt(String.valueOf(mapaColumna.get("valor"))));
+                        int priValor = Integer.parseInt(String.valueOf(mapaColumna.get("valor")));
+                        System.out.println("priValor:" + priValor);
+                        pregitemDao.persist(pregOp);
+
+                        o++;
+                    }
+                    break;
+                    
+                case 5: // RESPUESTA MATRIZ MÚLTIPLE
+                    System.out.println("Pregunta Matriz Multiple");
+
+                    int e = 1;
+                    for (Map mapaOpcion : filasS) {
+                        Opcion opc = new Opcion();
+                        opc.setOpcId(2);
+                        opc.setOpcNombre(String.valueOf(mapaOpcion.get("opcion")));
+                        opciDao.persist(opc);
+                        
+                        PreguntaOpcion pregOp = new PreguntaOpcion();
+                        pregOp.setOpcId(opc);
+                        pregOp.setPreId(pregunta);
+                        pregOp.setPronumeralOpcion(String.valueOf(e));
+                        pregOp.setProId(1);
+                        pregOp.setPronumeroPreguntaSiguiente("");
+                        pregOpcDao.persist(pregOp);
+
+                        e++;
+                    }
+
+                    int y = 1;
+                    for (Map mapaColumna : columnas) {
+                        Item opc = new Item();
+                        opc.setIteId(2);
+                        opc.setIteNombre(String.valueOf(mapaColumna.get("opcion")));
+                        itemDao.persist(opc);
+                        
+                        PreguntaItem pregOp = new PreguntaItem();
+                        pregOp.setIteId(opc);
+                        pregOp.setPreId(pregunta);
+                        pregOp.setPrinumeralItem(y);
+                        pregOp.setPriId(2); 
+                        pregOp.setPriValor(Integer.parseInt(String.valueOf(mapaColumna.get("valor"))));
+                        pregitemDao.persist(pregOp);
+
+                        y++;
+                    }
+                    break;
+                        
+                case 6: // RESPUESTA MIXTA
+                    System.out.println("Pregunta Matriz Mixta");
+
+                    int p = 1;
+                    for (Map mapaOpcion : filasS) {
+                        System.out.println("3::");
+                        Opcion opc = new Opcion();
+                        opc.setOpcId(2);
+                        opc.setOpcNombre(String.valueOf(mapaOpcion.get("opcion")));
+
+                        opciDao.persist(opc);
+                        System.out.println("4::");
+                        PreguntaOpcion pregOp = new PreguntaOpcion();
+                        pregOp.setOpcId(opc);
+                        pregOp.setPreId(pregunta);
+                        pregOp.setPronumeralOpcion(String.valueOf(p));
+                        pregOp.setProId(1);
+                        pregOp.setPronumeroPreguntaSiguiente("");
+                        pregOp.setProValor(Integer.parseInt(String.valueOf(mapaOpcion.get("valor"))));
+                        System.out.println("5::");
+                        pregOpcDao.persist(pregOp);
+
+                        p++;
+                    }
+                    break;
+
+            }
+
+            EstructuraEncuesta est = new EstructuraEncuesta();
+            est.setEseId(1);
+            est.setPreId(pregunta);
+            est.setSecId(secc);
+            if (subss != null) {
+                est.setSusIdNivel1(subss);
+            }
+
+            estDao.persist(est);
+            System.out.println("6::");
+            DetEncuesta detEnc = new DetEncuesta();
+            detEnc.setCaeId(car);
+            detEnc.setEseId(est);
+            detEnc.setDeeId(1);
+
+            detDao.persist(detEnc);
+
+            return ResultFactory.getSuccessResultMsg("Pregunta agregada exitosamente");
+
+        } catch (Exception e) {
+            System.out.println("excepcion:" + e.getMessage());
+            e.printStackTrace();
+            return ResultFactory.getFailResult("No se registro la pregunta. Error");
+        }
+
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<Pregunta> encontrar(int idPregunta) {
+        Pregunta pregunta = pregDao.find(idPregunta);
+        return ResultFactory.getSuccessResult(pregunta);
+    }
+
+    @Override
+    public Result<Pregunta> guardarPreguntaAbierta(String encuesta, int numero, int seccion, int subseccion, int pregunta_unica_persona, String subtipo, String tipoNumerico, double desde, double hasta, String descripcion, int tipoId, String descripcionTipo, String comentario) {
+        
+        try {
+            
+            CaratulaEncuesta car = carServ.findByCodigo(encuesta).getData();
+            Catalogo cat = catServ.encontrarPorGrupoSubGrupo(4, tipoId).getData();
+
+            Seccion secc = seccDao.encontrarPorEncuesta(car, seccion);
+            SubSeccion subss = null;
+            if (subseccion != 0) {
+                subss = subSeccDao.encontrarPorEncuestaSeccion(car, secc, subseccion);
+            }
+            System.out.println("pregunta_unica_persona(guardar):" + pregunta_unica_persona);
+            Pregunta pregunta = new Pregunta();
+            pregunta.setPreId(1);
+            pregunta.setPreNumero(String.valueOf(numero));
+            pregunta.setPreEnunciado(descripcion);
+            pregunta.setPreComentario(comentario);
+            pregunta.setPreUnicaPersona(pregunta_unica_persona);
+            pregunta.setPreTipoRpta(cat.getCatCodigo().toCharArray());
+            pregunta.setPreCantMaximaItems(12);
+            
+            pregunta.setPreSubtipo(subtipo);
+            if ( "numerico".equals(subtipo) ) {
+                pregunta.setPreTipoNumerico(tipoNumerico);
+                pregunta.setPreDesde(desde);
+                pregunta.setPreHasta(hasta);
+                
+            }
+//            else {
+//                pregunta.setPreTipoNumerico(null);
+//                pregunta.setPreDesde(-1.00);
+//                pregunta.setPreHasta(-1.00);
+//            }
+
+	    pregDao.persist(pregunta);
+            System.out.println("id::" + pregunta.getPreId());
+
+            EstructuraEncuesta est = new EstructuraEncuesta();
+            est.setEseId(1);
+            est.setPreId(pregunta);
+            est.setSecId(secc);
+            if (subss != null) {
+                est.setSusIdNivel1(subss);
+            }
+
+            estDao.persist(est);
+            System.out.println("6::");
+            DetEncuesta detEnc = new DetEncuesta();
+            detEnc.setCaeId(car);
+            detEnc.setEseId(est);
+            detEnc.setDeeId(1);
+
+            detDao.persist(detEnc);
+
+            return ResultFactory.getSuccessResultMsg("Pregunta agregada exitosamente");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResultFactory.getFailResult("No se registro la pregunta. Error");
+        }
+    }
+
+    @Override
+    public boolean validarNumeroPregunta(String encuesta, String numeroSeccion, String numeroPregunta) {
+        return detDao.validarNumeroPregunta(encuesta, numeroSeccion, numeroPregunta);
+    }
+
+    @Override
+    public int getUltimoNumeroPregunta(String encuesta, String numeroSeccion) {
+        return detDao.getUltimoNumeroPregunta(encuesta, numeroSeccion);
+    }
+    
+    @Override
+    public boolean validarValoresOpciones(List lstValores, int tipoRpta ) {
+        
+        boolean valido = true;
+        
+        switch ( tipoRpta ) {
+                
+            case RPTA_UNICA:
+            case RPTA_MIXTA:
+            case RPTA_MULTIPLE:
+                valido = validarRepetido(lstValores);
+                
+            case RPTA_MATRIZ_MULTIPLE:
+            case RPTA_MATRIZ_SIMPLE:
+                break;
+            
+            default:
+                valido = true;
+                break;
+        }
+        return valido;
+    }
+    
+    private List ordernarLista( List lista ) {
+
+        int posicionInicialMenor = -1;
+        int eleLista = 0;
+        int temporal = 0;
+        
+        for ( int i = 0; i < lista.size(); i++ ) {
+            int menor = objectToInt(lista.get(i));
+            posicionInicialMenor = i;
+            
+            for ( int j = i + 1; j< lista.size(); j++ ) {
+                eleLista = objectToInt(lista.get(j));
+
+                if ( menor >  eleLista ) {
+                    temporal = menor;
+                    menor = eleLista;
+                    
+                    posicionInicialMenor = j;
+                    lista.remove(posicionInicialMenor); // quito elemento menor
+                    lista.remove(i); // quito elemento mayor
+                    lista.add(i, menor); // agrego elemento menor a donde estaba el mayor
+                    lista.add(posicionInicialMenor, temporal); // agrego elemento mayor a donde estaba el menor
+                }
+            }
+        }
+        return lista;
+    }
+    
+    private boolean existeRepetido(List lista) {
+        boolean repetido = false;
+        
+        for ( int i = 0; i < lista.size() - 1; i++ ) {
+            int guia = objectToInt(lista.get(i));
+            
+            for ( int j = i + 1; j < lista.size(); j++ ) {
+                int desplazado = objectToInt(lista.get(j));
+                
+                if ( guia == desplazado ) {
+//                    System.out.println("Se repite elemento " + guia + " en posicion " + i + " y " + j);
+                    repetido = true;
+                    break;
+                }
+            }
+        }
+        return repetido;
+    }
+    
+    private boolean validarRepetido(List lista) {
+        lista = ordernarLista(lista);
+        return !existeRepetido(lista);
+    }
+    
+    private int objectToInt(Object objeto) {
+        return Integer.parseInt(String.valueOf(objeto));
+    }
+    
+    private void mostrar(List lista) {
+        for ( int i= 0; i < lista.size(); i++ ) {
+            System.out.print(lista.get(i)+ "-");
+        }
+    }
+}

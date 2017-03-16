@@ -1,0 +1,58 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Acceso;
+import com.fabrica.sisgene.domain.Rol;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("accesoDao")
+@Transactional
+public class AccesoDaoImpl extends GenericDaoImpl<Acceso, String> implements AccesoDao {
+
+    public AccesoDaoImpl() {
+        super(Acceso.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Acceso> findAll() {
+        return em.createNamedQuery("Acceso.findAll")
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Acceso findByAccId(int id) {
+
+        List<Acceso> rol = em.createNamedQuery("Acceso.findByAccId")
+                .setParameter("accId", id)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    public boolean eliminarAccesos(Rol rol) {
+        try {
+            int n = em.createQuery("Delete  from Acceso ac where ac.rolId=:rolId")
+                    .setParameter("rolId", rol).executeUpdate();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
+    @Override
+    public List<Acceso> encontrarPorRol(int idRol) {
+        List<Acceso> rol = em.createQuery("select ac from Acceso ac, Rol rol where ac.rolId=rol and rol.rolId=:idRol ")
+                .setParameter("idRol", idRol)
+                .getResultList();
+
+        return (rol);
+    }
+
+}

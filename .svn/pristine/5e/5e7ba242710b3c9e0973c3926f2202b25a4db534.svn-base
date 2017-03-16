@@ -1,0 +1,1216 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.domain.Allegado;
+import com.fabrica.sisgene.domain.CabEncRpta;
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.DetEncRpta;
+import com.fabrica.sisgene.service.CabEncRptaService;
+import com.fabrica.sisgene.service.DetEncRptaService;
+import com.fabrica.sisgene.domain.Direccion;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.domain.Persona;
+import com.fabrica.sisgene.domain.Pregunta;
+import com.fabrica.sisgene.domain.PreguntaItem;
+import com.fabrica.sisgene.domain.PreguntaOpcion;
+import com.fabrica.sisgene.domain.Ubigeo;
+import com.fabrica.sisgene.domain.Usuario;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import com.fabrica.sisgene.service.AllegadoService;
+import com.fabrica.sisgene.service.CaratulaEncuestaService;
+import com.fabrica.sisgene.service.DetEncuestaService;
+import com.fabrica.sisgene.service.PreguntaItemService;
+import com.fabrica.sisgene.service.PreguntaOpcionService;
+import com.fabrica.sisgene.service.UsuarioPersonaService;
+import static com.fabrica.sisgene.util.Constantes.*;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import javax.json.JsonArray;
+import org.springframework.web.bind.annotation.RequestParam;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */ 
+/**
+ * Method:  POST
+ * URL:    http://localhost:8080/sisgene/api/encuestas/2015-I/resultados/reporte?tipo=simple (compuesto)
+ * Body:
+ *          
+*/
+
+@Controller
+@RequestMapping("/encuestas")
+public class RespuestaHandler extends AbstractHandler {
+    
+    @Autowired
+    protected CabEncRptaService cabEncRptaService;
+    
+    @Autowired
+    protected DetEncRptaService detEncRptaService;
+    
+    @Autowired
+    protected UsuarioPersonaService usuarioPersonaService;
+    
+    @Autowired
+    protected CaratulaEncuestaService caratulaEncuestaService;
+    
+    @Autowired
+    protected DetEncuestaService detEncService;
+    
+    @Autowired
+    protected PreguntaOpcionService proService;
+    
+    @Autowired
+    protected PreguntaItemService priService;
+    
+    @Autowired
+    protected AllegadoService allegadoService;
+    
+    
+    @RequestMapping(value = "/{codigoEncuesta}/resultados/reporte", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody 
+    public String getEncuestaContestada(
+            @PathVariable("codigoEncuesta") String codigoEncuesta,  
+            @RequestParam(value = "tipo", required = false) String tipoExcel,
+            HttpServletRequest request) {
+        
+        Result<CaratulaEncuesta> rstCarEnc = caratulaEncuestaService.findByCodigo(codigoEncuesta);
+        
+        if ( rstCarEnc.isSuccess() ) {
+            
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("success", true);
+            
+            
+            JsonArrayBuilder dicArrayCompuestoBuilder = Json.createArrayBuilder();
+            JsonArrayBuilder dicArraySimpleBuilder = Json.createArrayBuilder();
+            
+            // 1º HOJA (DICCIONARIO)
+            switch ( tipoExcel ) {
+                
+                case "compuesto": // Por Hogares (Encuestado)
+                    
+                    dicArrayCompuestoBuilder = obtenerDiccionarioCompuestoPortada();
+                    Result<List<Object[]>> detEncPorHogar = detEncService.findByDetalleEncPorHogar(rstCarEnc.getData());
+                    builder.add("diccionario", getDiccionarioPreguntas(detEncPorHogar.getData(), dicArrayCompuestoBuilder));
+                    break;
+                    
+                case "simple": // Por Personas (Parientes)
+                    
+                    dicArraySimpleBuilder = obtenerDiccionarioSimplePortada();
+                    Result<List<Object[]>> detEncPorPersonas = detEncService.findByDetalleEncPorPersonas(rstCarEnc.getData());
+                    builder.add("diccionario", getDiccionarioPreguntas(detEncPorPersonas.getData(), dicArraySimpleBuilder));
+                    break;
+            }
+            
+            // 2º HOJA (RESPUESTAS)
+            JsonArrayBuilder resultArrayBuilder = Json.createArrayBuilder();
+            
+//            System.out.println("codigoEncuesta:" + codigoEncuesta);
+            Result<List<CabEncRpta>> cabEncRptas = cabEncRptaService.findByEncuestas(codigoEncuesta);
+            List<CabEncRpta> cabRptas = cabEncRptas.getData();
+            
+            for ( CabEncRpta cabecRpta : cabRptas ) {
+                
+                switch ( tipoExcel ) {
+                    
+                    case "compuesto": // Sólo Encuestado
+                        resultArrayBuilder = getResultadosDatosPersonales(rstCarEnc, cabecRpta, tipoExcel, codigoEncuesta, 
+                                                                          resultArrayBuilder, null, 0, 
+                                                                          dicArrayCompuestoBuilder, -1);
+                        break;
+
+                    case "simple": // Allegados (Parientes)
+//                        System.out.println("idCabEncRpta:" + cabecRpta.getCaerId());
+                        List<Allegado> allegados = allegadoService.obtenerAllegados(cabecRpta.getCaerId());
+//                        int numeroAllegados = allegados.size();
+//                        System.out.println("allegados:" + allegados);
+//                        System.out.println("numero allegados:" + numeroAllegados);
+
+                        /// Validando data vacia (allegados que no se guardan) de Tablet ///
+                        // Trabajando con el Servicio Descabellado
+//                        if ( numeroAllegados == 0 ) {
+                            int idCabEncRpta = cabecRpta.getCaerId();
+                            List<Object[]> lista = detEncRptaService.getDetalleRptaPrimera(idCabEncRpta);
+                            Object[] deer = lista.get(0);
+                            String cadenaRpta = objectToString(deer[1]);
+//                            System.out.println("rpta ejemplo:" + deer[1]);
+                            int numeroAllegados = contarOcurrencias(cadenaRpta, ']') - 1;
+//                            System.out.println("N° allegados:" + numeroAllegados);
+                            
+                            Allegado alle;
+                            for ( int i = 0; i < numeroAllegados; i++ ) {
+                                if ( !allegados.isEmpty() ) {
+                                    alle = allegados.get(i+1);//0,1,2
+                                    
+                                } else {
+                                    alle = null;
+                                }
+                                int codIdeAllegado = i + 2; // i desde cero y allegado se cuenta desde 2 (Jefe de Hogar es 1)
+                                resultArrayBuilder = getResultadosDatosPersonales(rstCarEnc, cabecRpta, tipoExcel, 
+                                                                                  codigoEncuesta, resultArrayBuilder, 
+                                                                                  alle, numeroAllegados, 
+                                                                                  dicArraySimpleBuilder, codIdeAllegado);
+                            }
+//                        } 
+//                        else {
+//                            
+//                            for ( int i = 1; i < allegados.size(); i++ ) {
+//                                Allegado alle = allegados.get(i);
+//                                // Buscar por Allegado (codigo de identificacion) valor rpta en el detalleEncuestaRespuesta
+//                                resultArrayBuilder = getResultadosDatosPersonales(rstCarEnc, cabecRpta, tipoExcel, codigoEncuesta,
+//                                                                              resultArrayBuilder, alle, numeroAllegados, 
+//                                                                              dicArraySimpleBuilder, -1);
+//                            }
+//                        }
+                        ////////////////////////////////////////////////////////////////////
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            builder.add("respuestas", resultArrayBuilder);
+            return toJsonString(builder.build());
+            
+        } else {
+            return getJsonErrorMsg(rstCarEnc.getMsg());
+        }
+    }
+    
+    private int contarOcurrencias(String cadena, char caracter) {
+        int cantidad = 0;
+        for ( int i=0; i < cadena.length(); i++ ) {
+            if ( cadena.charAt(i) == caracter ) {
+                cantidad++;
+            }
+        }
+        return cantidad;
+    }
+    
+    private String[] getRptasAllegados(String rptasMultipersona, int numeroJefeHogar_Allegados) {
+        String[] valores = null;
+        String[] rptas = new String[numeroJefeHogar_Allegados - 1];
+        String[] rptasAllegados = separar(rptasMultipersona, numeroJefeHogar_Allegados, "&");
+        
+        int k = 0;
+        for ( int i = 1; i < rptasAllegados.length; i++ ) {
+            valores = separar(rptasAllegados[i], 2, "]");
+            
+            for ( int j = 1; j < valores.length; j=j+2) {
+                rptas[k] = valores[j];
+                k++;
+            }
+        }
+        return rptas;
+    }
+    
+    private String[] separar(String cadena, int elementos, String separador) {
+        String [] separados = new String[elementos];
+        separados = cadena.split(separador);
+        return separados;
+    }
+    
+    private void addVariable(JsonArrayBuilder diccionarioArrayBuilder, String variable, String descripcion) {
+        diccionarioArrayBuilder.add(Json.createObjectBuilder()
+            .add("variable", variable)
+            .add("descripcion", descripcion));
+    }
+    
+    private String[] asignarVariables(Object[] objetoDetEncRpta) {
+        
+        String[] variables = null;
+        Object numeroSeccion = objetoDetEncRpta[0];
+        Object numeroSubSeccion = objetoDetEncRpta[1];
+        Object numeroPregunta = objetoDetEncRpta[2];
+        String tipoRpta = objectToString(objetoDetEncRpta[4]);
+        int idPregunta = objectToInt(objetoDetEncRpta[5]);
+        String variable = "P";
+        
+        variable = getSeccion(numeroSeccion, variable);
+        variable = getSubSeccion(numeroSubSeccion, variable);
+        variable = getNumPreguntaVarDic(numeroPregunta, variable);
+        
+        List<PreguntaOpcion> lstPregOpc = getListaPreguntaOpcion(tipoRpta, idPregunta);
+        List<PreguntaItem> lstPregItem = getListaPreguntaItem(tipoRpta, idPregunta);
+        
+        switch ( tipoRpta ) {
+            case "AB":
+                variables = new String[1];
+                variables[0] = variable;
+                break;
+                
+            case "UN":
+            case "MI":
+            case "MU":
+                variables = new String[lstPregOpc.size()];
+                String variableOpcion = "";
+                int indice = 0;
+                
+                for ( PreguntaOpcion po : lstPregOpc ) {
+                    String opcionNombre = po.getOpcId().getOpcNombre();
+//                    System.out.println("opcionNombre:" + opcionNombre);
+                    int idOpcion = po.getOpcId().getOpcId();
+//                    System.out.println("idOpcion:" + idOpcion);
+                    String nombreOpcion = po.getOpcId().getOpcNombre();
+//                    System.out.println("opcion:" + nombreOpcion);
+                    int valorOpcion = po.getProValor();
+//                    System.out.println("valorOpcion:" + valorOpcion);
+//                    System.out.println("->po:" + po);
+//                    System.out.println("->variable:" + variable);
+                    variableOpcion = getNumOpcion(po, variable);
+//                    System.out.println("variableOpcion(Final):" + variableOpcion);
+                    variables[indice] = variableOpcion;
+                    indice++;
+                }
+                break;
+                    
+            case "MS":
+            case "MM":
+                variables = new String[lstPregItem.size() * lstPregOpc.size()];
+                indice = 0;
+                
+                for (PreguntaOpcion po : lstPregOpc) {
+                    for (PreguntaItem pi : lstPregItem) {
+                        String varFilaColDic = getNumFilaColumnaDic(po, pi, variable);
+                        System.out.println("varFilaColDic::" + varFilaColDic);
+                        variables[indice] = varFilaColDic;
+                        indice++;
+                    }
+                }
+                break;
+        }
+        return variables;
+    }
+    
+    private int stringToInt( String numero ) {
+        return Integer.parseInt(numero);
+    }
+    
+    private JsonObjectBuilder getResultPreguntaPorPersonas(int idCabEncRpta, Object[] objDetEnc, 
+                                                           JsonObjectBuilder resultObjectBuilder, 
+                                                           Allegado allegado, int numeroAllegados,
+                                                           int codIdeAllegado) {
+//        System.out.println("getResultPreguntaPorPersonas");
+        
+        int idPregunta = objectToInt(objDetEnc[5]);
+//        System.out.println("idCabEncRpta:" + idCabEncRpta);
+//        System.out.println("idPregunta:" + idPregunta);
+        DetEncRpta detEncRpta = detEncRptaService.getDetalleRespuesta(idCabEncRpta, idPregunta);
+//        System.out.println("detEncRpta:" + detEncRpta);
+        
+        String valorRpta = "";
+        if ( detEncRpta == null ) {
+            valorRpta = SIN_MARCAR_TABLET; // No se guardo registro detEncRpta para esta pregunta.
+            
+        } else {
+            String valoresRptas = detEncRpta.getDeerValorRespuesta();
+//            System.out.println("ValoresRptas:" + valoresRptas);
+//            System.out.println("tipoRpta:" + String.valueOf(objDetEnc[4]));
+            int codigoIdentificacion = -1;
+            
+//            if ( allegado != null ) { // && codigoIdentificacion != -1 
+//                codigoIdentificacion = stringToInt(allegado.getAllCodigoIdentificacion());
+//                
+//            } else {
+                codigoIdentificacion = codIdeAllegado;
+//            }
+//            System.out.println("codigoIdentificacion:" + codigoIdentificacion);
+            String[] rptasMultipersona = getRptasAllegados(valoresRptas, numeroAllegados + 1);
+            
+            for ( int i = 0; i < rptasMultipersona.length; i++ ) {
+                if ( codigoIdentificacion-2 == i ) { // 2-2 = 0, 3-2 = 1
+                    valorRpta = rptasMultipersona[i];
+                    break;
+                }
+            }    
+        }
+        String tipoRpta = String.valueOf(objDetEnc[4]);
+        String[] variables = asignarVariables(objDetEnc);
+//        System.out.println("N° de elementos de variables:" + variables.length);
+        
+        List<PreguntaOpcion> lstPregOpc = getListaPreguntaOpcion(tipoRpta, idPregunta);
+        List<PreguntaItem> lstPregItem = getListaPreguntaItem(tipoRpta, idPregunta);
+        
+        switch ( tipoRpta ) {
+            case "AB":
+                if ( "null".equals(valorRpta) ) {
+                    valorRpta = SIN_MARCAR_TABLET;
+                }
+                addRespuesta(resultObjectBuilder, variables[0], valorRpta);
+                break;
+                
+            case "UN":
+            case "MU":
+                System.out.println("UN y MU");
+                int indice = 0;
+                
+                for ( PreguntaOpcion po : lstPregOpc ) {
+                    String valorOpcion = intToString(po.getProValor());
+                    String variableOpcion = variables[indice];
+                    
+                    if ( "null".equals(valorRpta) ) {
+                        addRespuesta(resultObjectBuilder, variableOpcion, SIN_MARCAR_TABLET);
+                        
+                    } else {
+                        if ( valorOpcion.equals(valorRpta) ) {
+                            addRespuesta(resultObjectBuilder, variableOpcion, valorRpta);
+
+                        } else {
+                            addRespuesta(resultObjectBuilder, variableOpcion, "");
+                        }
+                    }
+                    indice++;
+                }
+                break;
+            
+            case "MI":
+//                System.out.println("MI");
+                indice = 0;
+//                System.out.println("->idPregunta:" + idPregunta);
+                
+                if ( SIN_MARCAR_TABLET.equals(valorRpta) || "null".equals(valorRpta) || valorRpta == null ) { 
+                    int numeroOpciones = proService.contarNumeroOpciones(idPregunta);
+//                    System.out.println("N° opciones:" + numeroOpciones);
+
+                    for ( int i = 0; i < numeroOpciones; i++ ) {
+                        String variableOpcion = variables[indice];
+//                        System.out.println("variableOpcion:" + variableOpcion);
+                        addRespuesta(resultObjectBuilder, variableOpcion, SIN_MARCAR_TABLET);
+                        indice++;
+                    }
+
+                } else {
+                    for ( PreguntaOpcion po : lstPregOpc ) {
+                        String valorOpcion = intToString(po.getProValor());
+//                        System.out.println("indice:" + indice);
+
+                        int numeroRptas = po.getPreId().getPremaxNumRptasMU() + 1;
+//                        System.out.println("(MIXTA)numeroRptas(MAX):" + numeroRptas);
+//                        System.out.println("(MIXTA)valorRpta:" + valorRpta); // null
+
+//                        System.out.println("es? " + (SIN_MARCAR_TABLET.equals(valorRpta)));
+//                        System.out.println("es nulo? "+ ("null".equals(valorRpta)));
+//                        System.out.println("es nulo sin comillas? "+ (valorRpta == null));
+//                        System.out.println("valor final? " + (SIN_MARCAR_TABLET.equals(valorRpta) || "null".equals(valorRpta)));
+
+                        // idPregunta, ValoresRptas, valorRpta: (295, [01]&[02]&[03], "null".equals(valorRpta))
+                        // idPregunta, ValoresRptas, valorRpta: (199, [01]&[02]&[03], valorRpta == null)
+                        
+//                        System.out.println("->valorRpta:" + valorRpta);
+//                        System.out.println("->numeroRptas:" + numeroRptas);
+                        String[] valoresRptasMixtas = getRptasMixtas(valorRpta, numeroRptas);
+//                        System.out.println("longitud de valoresRptasMixtas:" + valoresRptasMixtas.length);
+
+                        for ( String valorRptaMixta : valoresRptasMixtas ) {
+                            String variableOpcion = variables[indice];
+                            if ( "null".equals(valorRpta) ) {
+                                addRespuesta(resultObjectBuilder, variableOpcion, SIN_MARCAR_TABLET);
+
+                            } else {
+                                if ( valorOpcion.equals(valorRptaMixta) ) {
+                                    addRespuesta(resultObjectBuilder, variableOpcion, valorRptaMixta);
+
+                                } else {
+                                    addRespuesta(resultObjectBuilder, variableOpcion, "");
+                                }
+                            }
+//                            indice++; ANTES
+                        }
+                        indice++;
+                    }
+                }
+                break;
+                
+            case "MS":
+            case "MM":
+//                System.out.println("MS y MM");
+                indice = 0;
+                
+                for ( PreguntaOpcion po : lstPregOpc ) {
+                    String opcionPregunta = po.getOpcId().getOpcNombre();
+                    String valorOpcionPregunta = intToString(po.getProValor());
+//                    System.out.println("MULTIPERSONAS...");
+//                    System.out.println("(MATRIZ)valorOpcionPregunta:" + valorOpcionPregunta);
+                        
+                    for ( PreguntaItem pi : lstPregItem ) {
+                        String variableOpcion = variables[indice];
+                        String valorItemPregunta = intToString(pi.getPriValor());
+//                        System.out.println("(MATRIZ-COLUMNA)valorItemPregunta:" + valorItemPregunta);
+                        int numeroFilas = lstPregOpc.size();
+                        String[] opcionesItems = rptasMatrizSimple(valorRpta, numeroFilas);
+
+                        for ( String opcionItem : opcionesItems ) {
+                            String[] valorMatrizSimple = opcionValorMatrizSimple(opcionItem, MATRIZ_BIDIMENSIONAL);
+//                            System.out.println("Longitud de vector valorMatrizSimple:" + valorMatrizSimple.length);
+                            
+                            String vaciaTablet = "[01]" + SIN_MARCAR_TABLET;
+                            if ( vaciaTablet.equals(valorRpta) && valorMatrizSimple.length == 1 ) {
+                                String nombreOpcion = valorMatrizSimple[0];
+                                String valorItem = valorMatrizSimple[1];// CORREGIR URGENTE LEDIS
+//                                System.out.println("(MATRIZ)variableOpcion:" + variableOpcion);
+//                                System.out.println("(MATRIZ)nombreOpcion:" + nombreOpcion);
+//                                System.out.println("(MATRIZ-RPTA)valorItem:" + valorItem);
+
+                                if ( "null".equals(valorItem) ) {
+                                    addRespuesta(resultObjectBuilder, variableOpcion, SIN_MARCAR_TABLET);
+                                
+                                } else {
+                                    if ( valorItemPregunta.equals(valorItem) ) {
+                                        addRespuesta(resultObjectBuilder, variableOpcion, valorItem);
+
+                                    } else {
+                                        addRespuesta(resultObjectBuilder, variableOpcion, "");
+                                    }
+                                }
+                                
+                            } else {
+                                addRespuesta(resultObjectBuilder, variableOpcion, SIN_MARCAR_TABLET);
+                            }
+                        }
+                        indice++;
+                    }
+                }
+                break;
+        }
+        
+        return resultObjectBuilder;
+    }
+    
+    private JsonObjectBuilder getResultPreguntaPorHogar(int idCabEncRpta, Object[] objDetEnc, 
+                                                        JsonObjectBuilder resultObjectBuilder, int numeroAllegados) {
+
+        int idPregunta = objectToInt(objDetEnc[5]);
+//        System.out.println("idCabEncRpta:" + idCabEncRpta);
+//        System.out.println("idPregunta:" + idPregunta);
+        DetEncRpta detEncRpta =detEncRptaService.getDetalleRespuesta(idCabEncRpta, idPregunta);
+        String valorRpta = "";
+        
+        if ( detEncRpta == null ) {
+            valorRpta = "[01]" + SIN_MARCAR_TABLET;
+            
+        } else {
+            valorRpta =detEncRpta.getDeerValorRespuesta();
+        }
+        String[] variables = asignarVariables(objDetEnc);
+//        System.out.println("Longitud de variables:" + variables.length);
+//        System.out.println("valorRpta(entera):" + valorRpta);
+        
+//        for ( int i = 0; i < variables.length; i++ ) {
+//            System.out.println("var:" + variables[i]);
+//        }
+        String tipoRpta = String.valueOf(objDetEnc[4]);
+//        System.out.println("tipoRpta:" + tipoRpta);
+        
+        int unica_persona = objectToInt(objDetEnc[6]);
+        if ( unica_persona == 0 ) {
+            String[] separados = new String[numeroAllegados + 1];
+            separados = separar(valorRpta, numeroAllegados + 1, "&");
+            valorRpta = separados[0];
+        }
+        valorRpta = valorRpta.substring(4,  valorRpta.length());
+//        System.out.println("Valor Rpta(separada)---->" + valorRpta);
+        
+        List<PreguntaOpcion> lstPregOpc = getListaPreguntaOpcion(tipoRpta, idPregunta);
+        List<PreguntaItem> lstPregItem = getListaPreguntaItem(tipoRpta, idPregunta);
+//        if ( lstPregOpc != null  && lstPregItem != null ) {
+//            System.out.println("idCabEncRpta:" + idCabEncRpta);
+//            System.out.println("idPregunta:" + idPregunta);
+//            for ( int i = 0; i < variables.length; i++ ) {
+//                System.out.println("var:" + variables[i]);
+//            }
+//            System.out.println("tipoRpta:" + tipoRpta);
+//            System.out.println("lstPregOpc SIZE:::" + lstPregOpc.size());
+//            System.out.println("lstPregItem SIZE:::" + lstPregItem.size());
+//        }
+        
+        switch ( tipoRpta ) {
+            case "AB":
+                if ( "null".equals(valorRpta) ) {
+                    valorRpta = SIN_MARCAR_TABLET;
+                }
+                addRespuesta(resultObjectBuilder, variables[0], valorRpta);
+                break;
+
+            case "UN":
+            case "MU":
+                int indice = 0;
+                
+                for ( PreguntaOpcion po : lstPregOpc ) {
+                    String valorOpcion = intToString(po.getProValor());
+                    String variableOpcion = variables[indice];
+//                    System.out.println("valorOpcion:" + valorOpcion);
+//                    System.out.println("variableOpcion:" + variableOpcion);
+//                    System.out.println("PREGUNTA UN - MU ERROR");
+//                    System.out.println("indice:" + indice);
+//                    System.out.println("detEncRpta:" + detEncRpta);
+//                    System.out.println("valorRpta:" + valorRpta);
+                    
+                    if ( detEncRpta == null ) {
+                        addRespuesta(resultObjectBuilder, variableOpcion, valorRpta);
+                        
+                    } else {
+                        if ( valorOpcion.equals(valorRpta) ) {
+                            addRespuesta(resultObjectBuilder, variableOpcion, valorRpta);
+
+                        } else {
+                            addRespuesta(resultObjectBuilder, variableOpcion, "");
+                        }
+                    }
+                    indice++;
+                }
+                break;
+                
+            case "MI":
+                indice = 0;
+//                System.out.println("MIXTA->idPregunta:" + idPregunta);
+//                System.out.println("MIXTA->valorRpta:" + valorRpta);
+//                System.out.println("MIXTA->Longitud de variables:" + variables.length);
+        
+//                for ( int i = 0; i < variables.length; i++ ) {
+//                    System.out.println("MIXTA->var:" + variables[i]);
+//                }
+                
+                if ( SIN_MARCAR_TABLET.equals(valorRpta) || "null".equals(valorRpta) || valorRpta == null ) {
+                    int numeroOpciones = proService.contarNumeroOpciones(idPregunta);
+//                    System.out.println("N° opciones:" + numeroOpciones);
+
+                    for ( int i = 0; i < numeroOpciones; i++ ) {
+                        String variableOpcion = variables[indice];
+//                        System.out.println("variableOpcion:" + variableOpcion);
+                        addRespuesta(resultObjectBuilder, variableOpcion, SIN_MARCAR_TABLET);
+                        indice++;
+                    }
+
+                } else {
+                    
+                    for ( PreguntaOpcion po : lstPregOpc ) {
+//                        System.out.println("idPreguntaOpcion:" + po.getId());
+//                        System.out.println("Valor de opcion: " + po.getProValor());
+                        String valorOpcion = intToString(po.getProValor());
+//                        System.out.println("indice:" + indice);
+                        
+                        String variableOpcion = variables[indice];
+                        
+                        int numeroRptas = po.getPreId().getPremaxNumRptasMU();
+//                        System.out.println("N° Rptas:" + numeroRptas);
+//                        System.out.println("valorRpta::::::" + valorRpta);
+                        String[] valoresRptasMixtas = getRptasMixtas(valorRpta, numeroRptas);
+                        
+//                        System.out.println("POINT valorRptasMixtas:" + valoresRptasMixtas.length);
+                        for ( String valorRptaMixta : valoresRptasMixtas ) {
+                            if ( valorOpcion.equals(valorRptaMixta) ) {
+                                addRespuesta(resultObjectBuilder, variableOpcion, valorRptaMixta);
+
+                            } else {
+                                addRespuesta(resultObjectBuilder, variableOpcion, "");
+                            }
+                        }
+                        indice++;
+                    }
+                }
+                break;
+
+            case "MS":
+            case "MM":
+//                System.out.println("MATRIZ SIMPLE Y MULTIPLE");
+                indice = 0;
+                
+                for ( PreguntaOpcion po : lstPregOpc ) {
+                    String opcionPregunta = po.getOpcId().getOpcNombre();
+                    String valorOpcionPregunta = intToString(po.getProValor());
+//                    System.out.println("(MATRIZ)valorOpcionPregunta:" + valorOpcionPregunta);
+                    
+                    for ( PreguntaItem pi : lstPregItem ) {
+                        String variableOpcion = variables[indice];
+//                        System.out.println("(MATRIZ)variableOpcion:" + variableOpcion);
+                        String valorItemPregunta = intToString(pi.getPriValor());
+//                        System.out.println("(MATRIZ-COLUMNA)valorItemPregunta:" + valorItemPregunta);
+                        int numeroFilas = lstPregOpc.size();
+//                        System.out.println("valorRpta:::" + valorRpta);
+//                        System.out.println("numeroFilas:" + numeroFilas);
+                        String[] opcionesItems = rptasMatrizSimple(valorRpta, numeroFilas);
+//                        System.out.println("Numero opcionesItems:" + opcionesItems.length);
+
+                        for ( String opcionItem : opcionesItems ) {
+                            String[] valorMatrizSimple = opcionValorMatrizSimple(opcionItem, MATRIZ_BIDIMENSIONAL);
+//                            System.out.println("Longitud de vector valorMatrizSimple:" + valorMatrizSimple.length);
+                            
+                            String vaciaTablet = "[01]" + SIN_MARCAR_TABLET;
+                            if ( vaciaTablet.equals(valorRpta) && valorMatrizSimple.length == 1 ) {
+                                String nombreOpcion = valorMatrizSimple[0];
+                                String valorItem = valorMatrizSimple[1];
+//                                System.out.println("(MATRIZ)variableOpcion:" + variableOpcion);
+//                                System.out.println("(MATRIZ)nombreOpcion:" + nombreOpcion);
+//                                System.out.println("(MATRIZ-RPTA)valorItem:" + valorItem);
+
+                                if ( "null".equals(valorItem) ) {
+                                    addRespuesta(resultObjectBuilder, variableOpcion, SIN_MARCAR_TABLET);
+
+                                } else {
+                                    if ( valorItemPregunta.equals(valorItem) ) {
+                                        addRespuesta(resultObjectBuilder, variableOpcion, valorItem);
+
+                                    } else {
+                                        addRespuesta(resultObjectBuilder, variableOpcion, "");
+                                    }
+                                }
+                                
+                            } else {
+                                addRespuesta(resultObjectBuilder, variableOpcion, SIN_MARCAR_TABLET);
+                            }
+                        }
+                        indice++;
+                    }
+                }
+                break;
+                
+            default:
+                break;
+        }
+        return resultObjectBuilder;
+    }
+    
+    private String[] opcionValorMatrizSimple(String valorOpcionRpta, int numeroColumnas) {
+        return getSeparateString(valorOpcionRpta, PORCENTAJE, numeroColumnas);
+    }
+    
+    private String[] rptasMatrizSimple( String variasOpciones, int numeroFilas ) {
+        return getSeparateString(variasOpciones, DOLAR, numeroFilas);
+    }
+    
+    private String[] getRptasMixtas( String variasRptasMixta, int numeroRptas ) {
+        return getSeparateString(variasRptasMixta, DOLAR, numeroRptas);
+    }
+    
+    private String quitarPrefijo( String cadena ) {
+        return cadena.substring(LONGITUD_PREFIJO,  cadena.length());
+    }
+    
+    private String[] getSeparateString( String concatenado, String separador, int numeroElementos ) {
+        String[] separados = new String[numeroElementos];
+        return concatenado.split(separador);
+    }
+    
+    private String intToString(int entero) {
+        return String.valueOf(entero);
+    }
+    
+    private String arrayCharToString(char arrayChar[]) {
+        return String.valueOf(arrayChar);
+    }
+    
+    private JsonArrayBuilder getResultadosDatosPersonales(Result<CaratulaEncuesta> rstCarEnc, CabEncRpta cabecRpta, 
+                                                          String tipoExcel, String codigoEncuesta, 
+                                                          JsonArrayBuilder resultArrayBuilder, 
+                                                          Allegado allegado, int numeroAllegados, 
+                                                          JsonArrayBuilder dicArrayBuilder,
+                                                          int codIdeAllegado) {
+        
+        JsonObjectBuilder rptaObjectBuilder = null;
+                
+        if ( "compuesto".equals(tipoExcel) ) {
+            rptaObjectBuilder = agregarPortadaRptasPorHogarEncuesta(rstCarEnc, dicArrayBuilder, cabecRpta, codigoEncuesta, numeroAllegados);
+            resultArrayBuilder.add(rptaObjectBuilder);
+            
+        } else if ( "simple".equals(tipoExcel) ) {
+            rptaObjectBuilder = agregarPortadaRptasPorPersonasEncuesta(rstCarEnc, dicArrayBuilder, cabecRpta, 
+                                                                       codigoEncuesta, allegado, numeroAllegados,
+                                                                       codIdeAllegado);
+            resultArrayBuilder.add(rptaObjectBuilder);
+        }
+        return resultArrayBuilder;
+    }
+    
+    private JsonArrayBuilder getDiccionarioPreguntas( List<Object[]> listaDetEncPorHogar, 
+                                                      JsonArrayBuilder dicArrayCompuestoBuilder ) {
+        
+        for (Object[] detEnc : listaDetEncPorHogar) {
+
+            Object numeroSeccion = detEnc[0];
+            Object numeroSubSeccion = detEnc[1];
+            Object numeroPregunta = detEnc[2];
+            Object enunciadoPregunta = detEnc[3];
+            String tipoRpta = objectToString(detEnc[4]);
+            int idPregunta = objectToInt(detEnc[5]);
+
+            String variableDiccionario = "P", descripcionDiccionario = "";
+
+            variableDiccionario = getSeccion(numeroSeccion, variableDiccionario);
+            variableDiccionario = getSubSeccion(numeroSubSeccion, variableDiccionario);
+            variableDiccionario = getNumPreguntaVarDic(numeroPregunta, variableDiccionario);
+
+            List<PreguntaOpcion> lstPregOpc = getListaPreguntaOpcion(tipoRpta, idPregunta);
+            List<PreguntaItem> lstPregItem = getListaPreguntaItem(tipoRpta, idPregunta);
+
+            descripcionDiccionario = getNumPreguntaDescDic(numeroPregunta, descripcionDiccionario);
+
+            switch (tipoRpta) {
+
+                case "AB":
+                    descripcionDiccionario = getEnunciadoPregunta(enunciadoPregunta, descripcionDiccionario);
+                    addVariable(dicArrayCompuestoBuilder, variableDiccionario, descripcionDiccionario);
+                    break;
+
+                case "UN":
+                case "MI":
+                case "MU":
+                    for (PreguntaOpcion po : lstPregOpc) {
+                        String variableDiccionarioOpcion = getNumOpcion(po, variableDiccionario);
+                        String descripcionDiccionarioOpcion = getDescripcionDiccionario(po, enunciadoPregunta, descripcionDiccionario);
+                        addVariable(dicArrayCompuestoBuilder, variableDiccionarioOpcion, descripcionDiccionarioOpcion);
+                    }
+                    break;
+
+                case "MS": 
+                case "MM":
+                    for (PreguntaOpcion po : lstPregOpc) {
+                        
+                        for (PreguntaItem pi : lstPregItem) {
+                            String varFilaColDic = getNumFilaColumnaDic(po, pi, variableDiccionario);
+                            String descrFilaColDic = getDescrFilaColumnaDic(po, pi, enunciadoPregunta, descripcionDiccionario);
+                            addVariable(dicArrayCompuestoBuilder, varFilaColDic, descrFilaColDic);
+                        }
+                    }
+                    break;
+            }
+        }
+        
+        return dicArrayCompuestoBuilder;
+    }
+    
+    private int objectToInt(Object objeto) {
+        return Integer.parseInt(String.valueOf(objeto));
+    }
+    
+    private String getDescrFilaColumnaDic(PreguntaOpcion po, PreguntaItem pi, Object enunciadoPregunta, String descripcionDiccionario) {
+        descripcionDiccionario += "_" + po.getPronumeralOpcion() + "_" + pi.getPrinumeralItem() + ". " + enunciadoPregunta + " - " + po.getOpcId().getOpcNombre() + " - " + pi.getIteId().getIteNombre();
+        return descripcionDiccionario;
+    }
+    
+    private String getNumFilaColumnaDic(PreguntaOpcion po, PreguntaItem pi, String variableDiccionario) {
+        variableDiccionario += "_" + po.getPronumeralOpcion() + "_" + pi.getPrinumeralItem();
+        return variableDiccionario;
+    }
+    
+    private String objectToString( Object objeto ) {
+        return String.valueOf(objeto);
+    }
+    
+    private List<PreguntaOpcion> getListaPreguntaOpcion(String tipoRpta, Object idPregunta) {
+        
+        switch (tipoRpta) {
+            case "UN":
+            case "MI":
+            case "MU":
+            case "MS":
+            case "MM":
+                Pregunta pregunta = new Pregunta();
+                pregunta.setPreId(Integer.parseInt(String.valueOf(idPregunta)));
+                Result<List<PreguntaOpcion>>rstListaPro = proService.finbyEncuesta(pregunta);
+                return rstListaPro.getData();
+                
+            default:
+                return null;
+        }
+    }
+    
+     private List<PreguntaItem> getListaPreguntaItem(String tipoRpta, Object idPregunta) {
+        
+        switch ( tipoRpta ) {
+            case "MS":
+            case "MM":
+                Pregunta pregunta = new Pregunta();
+                pregunta.setPreId(Integer.parseInt(String.valueOf(idPregunta)));
+                Result<List<PreguntaItem>>rstListaPri = priService.finbyEncuesta(pregunta);
+                return rstListaPri.getData();
+                
+            default:
+                return null;
+        }
+    }
+    
+    private String getDescripcionDiccionario(PreguntaOpcion po, Object enunciadoPregunta, String descripcionDiccionario) {
+        descripcionDiccionario += "_" + po.getPronumeralOpcion() + ". " + enunciadoPregunta + " - " + po.getOpcId().getOpcNombre();
+        return descripcionDiccionario;
+    }
+    
+    private String getNumOpcion(PreguntaOpcion po, String variableDiccionario) {
+        variableDiccionario += "_" + po.getPronumeralOpcion();
+        return variableDiccionario;
+    }
+    
+    private String getSeccion(Object numeroSeccion, String variableDiccionario) {
+        if ( numeroSeccion != null ) {
+            variableDiccionario += String.valueOf(numeroSeccion);
+        }
+        return variableDiccionario;
+    }
+    
+    private String getSubSeccion(Object numeroSubSeccion, String variableDiccionario) {
+        if ( numeroSubSeccion != null ) {
+            variableDiccionario += "." + String.valueOf(numeroSubSeccion);
+        }
+        return variableDiccionario;
+    }
+    
+    private String getNumPreguntaVarDic(Object numPregunta, String variableDiccionario) {
+        variableDiccionario += ";" + numPregunta;
+        return variableDiccionario;
+    }
+    
+    private String getNumPreguntaDescDic(Object numPregunta, String descripcionDiccionario) {
+        descripcionDiccionario += numPregunta;
+        return descripcionDiccionario;
+    }
+    
+    private String getEnunciadoPregunta(Object enunciadoPregunta, String descripcionDiccionario) {
+        descripcionDiccionario += ". " + enunciadoPregunta;
+        return descripcionDiccionario;
+    }
+    
+    private String getValor(Persona persona, int opcion) {
+        
+        if ( persona != null ) {
+            
+            switch (opcion) {
+                
+                    case INDICE_NOMBRES:
+                        return formatearValorNull(persona.getPerNombres());
+                        
+                    case INDICE_APPAT:
+                        return formatearValorNull(persona.getPerapPaterno());
+                    
+                    case INDICE_APMAT:
+                        return formatearValorNull(persona.getPerapMaterno());
+                    
+                    case INDICE_DNI:
+                        return formatearValorNull(persona.getPerNumDocumento());
+                        
+                    case INDICE_TEL:
+                        return formatearValorNull(persona.getPerTelefono());
+                        
+                    case INDICE_CEL:
+                        return formatearValorNull(persona.getPerCelular());
+                        
+                    case INDICE_EMAIL:
+                        return formatearValorNull(persona.getPerCorreo());
+                        
+                    default:
+                        return "";
+            }
+        } else {
+            return "";
+        }
+    }
+    
+    private String getValor(CabEncRpta cabecRpta, int opcion) {
+        
+        if ( cabecRpta != null ) {
+            
+            switch (opcion) {
+                    case INDICE_CONDICION:
+                        return formatearCero(cabecRpta.getCaerNcondicion());
+                        
+                    case INDICE_DIR:
+                        return getDireccion(cabecRpta);
+                        
+                    case INDICE_CENPOB:
+                        return formatearValorNull(cabecRpta.getCaernombrecentroPoblado());
+                        
+                    case INDICE_CONG:
+                        return formatearCadenaNull(String.valueOf(cabecRpta.getCaerNconglomerado()));
+                    
+                    case INDICE_ZONA:
+                        return formatearCadenaNull(String.valueOf(cabecRpta.getCaerNzonaAer()));
+                    
+                    case INDICE_AREA:
+                        return formatearCero(cabecRpta.getCaerNarea());
+                        
+                    case INDICE_MZ:
+                        return formatearCadenaNull("" + cabecRpta.getCaerNmanzana());
+                        
+                    case INDICE_VIV:
+                        return formatearCadenaNull(String.valueOf(cabecRpta.getCaerNvivienda()));
+                        
+                    case INDICE_HOG:
+                        return formatearCadenaNull(String.valueOf(cabecRpta.getCaerNhogar()));
+                        
+                    case INDICE_PUERTA: case INDICE_INTER:  case INDICE_PISO:   case INDICE_ETAPA:  
+                    case INDICE_SECTOR: case INDICE_GRUPO_DIR:  case INDICE_LOTE:   case INDICE_KM:
+                        
+                        Direccion direccion = cabecRpta.getDirId();
+                        
+                        if ( direccion != null ) {
+                            
+                            switch ( opcion ) {
+                                case INDICE_PUERTA:
+                                    return formatearCadenaNull(String.valueOf(direccion.getDirNumPuerta()));
+                                    
+                                case INDICE_INTER:
+                                    return formatearValorNull(direccion.getDirInt());
+                                    
+                                case INDICE_PISO:
+                                    return formatearCadenaNull(String.valueOf(direccion.getDirPiso()));
+                                    
+                                case INDICE_ETAPA:
+                                    return formatearValorNull(direccion.getDirEtapa());
+                                    
+                                case INDICE_SECTOR:
+                                    return formatearValorNull(direccion.getDirSector());
+                                    
+                                case INDICE_GRUPO_DIR:
+                                    return formatearValorNull(direccion.getDirGrupo());
+                                    
+                                case INDICE_LOTE:
+                                    return formatearValorNull(direccion.getDirLote());
+                                    
+                                case INDICE_KM:
+                                    return formatearCadenaNull(String.valueOf(direccion.getDirKm()));
+                                    
+                                default:
+                                    return "";
+                            }
+                            
+                        } else {
+                            return "";
+                        }
+                        
+                    default:
+                        return "";
+            }
+        } else {
+            return "";
+        }
+    }
+    
+    private String getValor(UsuarioPersona usuarioPersona, int opcion) {
+        
+        if ( usuarioPersona != null ) {
+            Ubigeo ubigeo = usuarioPersona.getUbiId();
+            
+            if ( ubigeo != null ) {
+            
+                switch (opcion) {
+                        case INDICE_DEPART:
+                            return formatearValorNull(ubigeo.getUbiDepartamento());
+
+                        case INDICE_PROVIN:
+                            return formatearValorNull(ubigeo.getUbiProvincia());
+
+                        case INDICE_DISTRI:
+                            return formatearValorNull(ubigeo.getUbiDistrito());
+
+                        default:
+                            return "";
+                } 
+            } else {
+                return "";
+            }
+        } else {
+            return "";
+        }
+    }
+    
+    private JsonObjectBuilder agregarPortadaRptasPorPersonasEncuesta(Result<CaratulaEncuesta> rstCarEnc, JsonArrayBuilder dicArrayBuilder, 
+                                                                     CabEncRpta cabecRpta, String codigoEncuesta, 
+                                                                     Allegado allegado, int numeroAllegados,
+                                                                     int codIdeAllegado) {
+        JsonObjectBuilder resultObjectBuilder = Json.createObjectBuilder();
+        
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_FICHA, dicArrayBuilder), cabecRpta.getCaerNumeroEncuesta());
+        String codigoIdentificacion = SIN_LLENAR_TABLET;
+        String nombreAllegado = SIN_LLENAR_TABLET;
+        String apellidosAllegado = SIN_LLENAR_TABLET;
+        String gradoFamiliaridad = SIN_LLENAR_TABLET;
+        if ( allegado != null ) {
+            codigoIdentificacion = ( "".equals(allegado.getAllCodigoIdentificacion()) ? SIN_LLENAR_TABLET :allegado.getAllCodigoIdentificacion());
+            nombreAllegado = allegado.getAllNombres();
+            apellidosAllegado = allegado.getAllapPaterno() + " " + allegado.getAllapMaterno();
+            gradoFamiliaridad = ("".equals(allegado.getAllgradoFamiliaridad()) ? SIN_LLENAR_TABLET : allegado.getAllgradoFamiliaridad());
+        }
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_COD_PER, dicArrayBuilder), codigoIdentificacion);
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_NOM_ALLE, dicArrayBuilder), nombreAllegado);
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_APE_ALLE, dicArrayBuilder), apellidosAllegado);
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_GRA_FAM, dicArrayBuilder), gradoFamiliaridad);
+        // Agregando Respuestas de Preguntas en resultObjectBuilder para 1 SOLO ALLEGADO (Salida en Excel "Reporte por Personas" Hoja 2)
+        Result<List<Object[]>> detEncPorPersonas = detEncService.findByDetalleEncPorPersonas(rstCarEnc.getData());
+        List<Object[]> listaDetEncPorPersonas = detEncPorPersonas.getData();
+        
+        for ( Object[] objDetEncPorPersonas : listaDetEncPorPersonas ) {
+            resultObjectBuilder = getResultPreguntaPorPersonas(cabecRpta.getCaerId(), objDetEncPorPersonas, 
+                                                               resultObjectBuilder, allegado, numeroAllegados,
+                                                               codIdeAllegado);
+        }
+        
+        return resultObjectBuilder;
+    }
+    private JsonObjectBuilder agregarPortadaRptasPorHogarEncuesta(Result<CaratulaEncuesta> rstCarEnc, JsonArrayBuilder dicArrayBuilder, CabEncRpta cabecRpta, String codigoEncuesta, int numeroAllegados) {
+        
+        UsuarioPersona usuPerEnc = cabecRpta.getUspId();
+        Persona perEnc = usuPerEnc.getPerId();
+        Grupo gruEnc = usuPerEnc.getGruId();
+        Usuario usuarioSupervisor = usuPerEnc.getGruId().getUsuIdSupervisor();
+        Result<UsuarioPersona> rstUserPer = usuarioPersonaService.findByUsuarioPersona(codigoEncuesta, usuarioSupervisor.getUsuUsuario());
+        UsuarioPersona userPerSup = rstUserPer.getData();
+        Persona perSup = userPerSup.getPerId();
+        Persona persona = cabecRpta.getPerId();
+        
+        JsonObjectBuilder resultObjectBuilder = Json.createObjectBuilder();
+        
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_FICHA, dicArrayBuilder), cabecRpta.getCaerNumeroEncuesta());
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_SUPERVISOR, dicArrayBuilder), getNombreCompleto(perSup));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_NOMUSUARIO, dicArrayBuilder), getNombreCompleto(perEnc));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_GRUPO, dicArrayBuilder), String.valueOf(gruEnc.getGruNumero()));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_FECHAENC, dicArrayBuilder), dateToString(cabecRpta.getCaerFencuesta()));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_NOMBRES, dicArrayBuilder), getValor(persona, INDICE_NOMBRES));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_APPAT, dicArrayBuilder), getValor(persona, INDICE_APPAT));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_APMAT, dicArrayBuilder), getValor(persona, INDICE_APMAT));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_DNI, dicArrayBuilder), getValor(persona, INDICE_DNI));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_CONDICION, dicArrayBuilder), getValor(cabecRpta, INDICE_CONDICION));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_DIR, dicArrayBuilder), getValor(cabecRpta, INDICE_DIR));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_CENPOB, dicArrayBuilder), getValor(cabecRpta, INDICE_CENPOB));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_CONG, dicArrayBuilder), getValor(cabecRpta, INDICE_CONG));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_ZONA, dicArrayBuilder), getValor(cabecRpta, INDICE_ZONA));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_AREA, dicArrayBuilder), getValor(cabecRpta, INDICE_AREA));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_MZ, dicArrayBuilder), getValor(cabecRpta, INDICE_MZ));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_VIV, dicArrayBuilder), getValor(cabecRpta, INDICE_VIV));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_HOG, dicArrayBuilder), getValor(cabecRpta, INDICE_HOG));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_TEL, dicArrayBuilder), getValor(persona, INDICE_TEL));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_CEL, dicArrayBuilder), getValor(persona, INDICE_CEL));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_EMAIL, dicArrayBuilder), getValor(persona, INDICE_EMAIL));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_DEPART, dicArrayBuilder), getValor(usuPerEnc, INDICE_DEPART));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_PROVIN, dicArrayBuilder), getValor(usuPerEnc, INDICE_PROVIN));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_DISTRI, dicArrayBuilder), getValor(usuPerEnc, INDICE_DISTRI));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_PUERTA, dicArrayBuilder), getValor(cabecRpta, INDICE_PUERTA));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_INTER, dicArrayBuilder), getValor(cabecRpta, INDICE_DISTRI));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_PISO, dicArrayBuilder), getValor(cabecRpta, INDICE_PISO));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_ETAPA, dicArrayBuilder), getValor(cabecRpta, INDICE_ETAPA));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_SECTOR, dicArrayBuilder), getValor(cabecRpta, INDICE_SECTOR));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_GRUPO_DIR, dicArrayBuilder), getValor(cabecRpta, INDICE_GRUPO_DIR));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_LOTE, dicArrayBuilder), getValor(cabecRpta, INDICE_LOTE));
+        addRespuesta(resultObjectBuilder, getVariable(INDICE_KM, dicArrayBuilder), getValor(cabecRpta, INDICE_KM));
+        
+        // Agregando Respuestas de Preguntas en resultObjectBuilder (Salida en Excel "Reporte por Hogares" Hoja 2)
+        Result<List<Object[]>> detEncPorHogar = detEncService.findByDetalleEncPorHogar(rstCarEnc.getData());
+        List<Object[]> listaDetEncPorHogar = detEncPorHogar.getData();
+        
+        for ( Object[] objDetEncPorHogar : listaDetEncPorHogar ) {
+            resultObjectBuilder = getResultPreguntaPorHogar( cabecRpta.getCaerId(), objDetEncPorHogar, resultObjectBuilder, numeroAllegados );
+        }
+        
+        return resultObjectBuilder;
+    }
+    
+    private JsonArrayBuilder obtenerDiccionarioSimplePortada() {
+        
+        JsonArrayBuilder dicArrayBuilder = Json.createArrayBuilder();
+        addVariable(dicArrayBuilder, FICHA, DES_FICHA);
+        addVariable(dicArrayBuilder, CODIGO_PERSONA, DES_COD_PER);
+        addVariable(dicArrayBuilder, NOMBRE_ALLEGADO, DES_NOM_ALLE);
+        addVariable(dicArrayBuilder, APPELLIDO_ALLEGADO, DES_APE_ALLE);
+        addVariable(dicArrayBuilder, GRADO_FAMILIARIDAD, DES_GRA_FAM);
+        
+        return dicArrayBuilder;
+    }
+    
+    private JsonArrayBuilder obtenerDiccionarioCompuestoPortada() {
+        
+        JsonArrayBuilder dicArrayBuilder = Json.createArrayBuilder();
+        addVariable(dicArrayBuilder, FICHA, DES_FICHA);
+        addVariable(dicArrayBuilder, SUPERVISOR, DES_SUPERVISOR);
+        addVariable(dicArrayBuilder, USUARIO, DES_USUARIO);
+        addVariable(dicArrayBuilder, GRUPO, DES_GRUPO);
+        addVariable(dicArrayBuilder, FECH_ENC, DES_FECH_ENC);
+        addVariable(dicArrayBuilder, NOMBRES, DES_NOMBRES);
+        addVariable(dicArrayBuilder, AP_PAT, DES_APPAT);
+        addVariable(dicArrayBuilder, AP_MAT, DES_APMAT);
+        addVariable(dicArrayBuilder, DNI, DES_DNI);
+        addVariable(dicArrayBuilder, COND, DES_COND);
+        addVariable(dicArrayBuilder, CALLE, DES_CALLE);
+        addVariable(dicArrayBuilder, CENPOB, DES_CENPOB);
+        addVariable(dicArrayBuilder, CONG, DES_CONG);
+        addVariable(dicArrayBuilder, ZONA, DES_ZONA);
+        addVariable(dicArrayBuilder, AREA, DES_AREA);
+        addVariable(dicArrayBuilder, MZ, DES_MZ);
+        addVariable(dicArrayBuilder, VIV, DES_VIV);
+        addVariable(dicArrayBuilder, HOG, DES_HOG);
+        addVariable(dicArrayBuilder, TEL, DES_TEL);
+        addVariable(dicArrayBuilder, CEL, DES_CEL);
+        addVariable(dicArrayBuilder, EMAIL, DES_EMAIL);
+        addVariable(dicArrayBuilder, DEPART, DES_DEPART);
+        addVariable(dicArrayBuilder, PROVIN, DES_PROVIN);
+        addVariable(dicArrayBuilder, DISTRI, DES_DISTRI);
+        addVariable(dicArrayBuilder, PUERTA, DES_PUERTA);
+        addVariable(dicArrayBuilder, INTER, DES_INTER);
+        addVariable(dicArrayBuilder, PISO, DES_PISO);
+        addVariable(dicArrayBuilder, ETAPA, DES_ETAPA);
+        addVariable(dicArrayBuilder, SECTOR, DES_SECTOR);
+        addVariable(dicArrayBuilder, GRUPO_DIR, DES_GRUPO_DIR);
+        addVariable(dicArrayBuilder, LOTE, DES_LOTE);
+        addVariable(dicArrayBuilder, KM, DES_KM);
+        
+        return dicArrayBuilder;
+    }
+    
+    private String formatearDireccion(String tipoDir, String nPuerta, String interior, String piso, String etapa, 
+                                      String sector, String grupo, String manzana, String lote, String km){
+        return tipoDir + nPuerta + interior + piso + etapa + sector + grupo + manzana + lote + km;
+    }
+    
+    private String getVariable(int indice, JsonArrayBuilder jsonArrayBuilder) {
+        JsonArray jsonArray = jsonArrayBuilder.build();
+        String variable = jsonArray.getJsonObject(indice).getString("variable");
+        return variable;
+    }
+    
+    private void addRespuesta(JsonObjectBuilder resultObjectBuilder, String variable, String valor) {
+        resultObjectBuilder.add(variable, valor);
+    }
+    
+    private String getNombreCompleto(Persona persona) {
+        return persona.getPerNombres() + " " + persona.getPerapPaterno() + " " + persona.getPerapMaterno();
+    }
+    
+    private String dateToString(Date fecha) {
+        DateFormat fechaHora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return fechaHora.format(fecha); 
+    }
+ 
+    private String formatearCadenaNull(String elemento) {
+        return "null".equals(elemento)  ? "" : elemento ;
+    }
+    
+    private String formatearCero(int elemento) {
+        return (elemento == 0 ? "" : String.valueOf(elemento));
+    }
+    
+    private String formatearValorNull(String elemento) {
+        return elemento == null ? "" : elemento;
+    }
+ 
+    private String getDireccion(CabEncRpta cabecRpta) {
+        
+        Direccion direccion = cabecRpta.getDirId();
+        String valorDireccion = "";
+        
+        if ( direccion != null ) {
+            valorDireccion = formatearValorNull(direccion.getDirTipoUbicacion());
+        }
+        return valorDireccion;
+    }
+    
+}

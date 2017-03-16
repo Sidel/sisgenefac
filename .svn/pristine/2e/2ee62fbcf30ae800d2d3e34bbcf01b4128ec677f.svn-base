@@ -1,0 +1,30 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Pregunta;
+import com.fabrica.sisgene.domain.PreguntaItem;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("pregItemDao")
+@Transactional
+public class PreguntaItemDaoImpl extends GenericDaoImpl<PreguntaItem, String> implements PreguntaItemDao {
+
+    public PreguntaItemDaoImpl() {
+        super(PreguntaItem.class);
+    }
+
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<PreguntaItem> findByEncuesta(Pregunta car) {
+
+        List<PreguntaItem> rol = em.createQuery("select pri from PreguntaItem pri where pri.preId=:preg")
+                .setParameter("preg", car)
+                .getResultList();
+
+        return rol;
+    }
+
+}

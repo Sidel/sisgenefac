@@ -1,0 +1,56 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.domain.Catalogo;
+import com.fabrica.sisgene.service.CatalogoService;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping("/estados")
+public class EstadoEncuestaHandler extends AbstractHandler {
+
+    @Autowired
+    protected CatalogoService catService;
+
+    @RequestMapping(value = "", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String getEstados(HttpServletRequest request) {
+
+        Result<List<Catalogo>> cat = catService.encontrarPorGrupo(5);
+
+        if (cat.isSuccess()) {
+
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("success", true);
+
+            JsonArrayBuilder projectChildrenArrayBuilder = Json.createArrayBuilder();
+
+            for (Catalogo rol : cat.getData()) {
+
+                projectChildrenArrayBuilder.add(
+                        Json.createObjectBuilder()
+                        .add("id", rol.getCatSubGrupo())
+                        .add("descripcion", rol.getCatNombre())
+                );
+
+            }
+            builder.add("estados", projectChildrenArrayBuilder);
+            return toJsonString(builder.build());
+
+        } else {
+
+            return getJsonErrorMsg(cat.getMsg());
+
+        }
+    }
+
+}

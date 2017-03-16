@@ -1,0 +1,92 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Usuario;
+import com.fabrica.sisgene.util.Criptografo;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("userDao")
+@Transactional
+public class UsuarioDaoImpl extends GenericDaoImpl<Usuario, String> implements UsuarioDao {
+
+    public UsuarioDaoImpl() {
+        super(Usuario.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Usuario> findAll() {
+        return em.createNamedQuery("User.findAll").getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Usuario findByUsernamePassword(String usuUsuario, String usuClave) {
+
+        Usuario usuario = null;
+        List<Usuario> users = em.createNamedQuery("Usuario.findByUsuUsuario")
+                .setParameter("usuUsuario", usuUsuario).getResultList();
+
+        if (!users.isEmpty()) {
+            usuario = users.get(0);
+            Criptografo seguridad = new Criptografo();
+            String claveDesencriptadaBD = seguridad.desencripta(usuario.getUsuClave());
+
+            if (usuClave.equals(claveDesencriptadaBD)) {
+                usuario = users.get(0);
+
+            } else {
+                usuario = null;
+            }
+        }
+        return usuario;
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Usuario findByUsername(String usuUsuario) {
+        List<Usuario> users = em.createNamedQuery("Usuario.findByUsuUsuario").setParameter("usuUsuario", usuUsuario).getResultList();
+        return (users.size() == 1 ? users.get(0) : null);
+    }
+
+    @Override
+    public boolean guardar(Usuario disp) {
+        try {
+            em.persist(disp);
+            em.flush();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public Usuario findByUserId(int id) {
+        List<Usuario> users = em.createNamedQuery("Usuario.findByUsuId").setParameter("usuId", id).getResultList();
+        return (users.size() == 1 ? users.get(0) : null);
+    }
+
+    @Override
+    public List<Usuario> findbyEncuesta() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    // @Author: Ledis Rivera Changra
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Usuario findByIdUsuario(int idUsuario) {
+        List<Usuario> users = em.createNamedQuery("Usuario.findByUsuId").setParameter("usuId", idUsuario).getResultList();
+        return (users.size() == 1 ? users.get(0) : null);
+    }
+
+    @Override
+    public Usuario findByUsernameEnc(String username, CaratulaEncuesta car) {
+        List<Usuario> users = em.createQuery("select us from Usuario us, UsuarioPersona up where up.usuId= us and up.caeId=:car and us.usuUsuario= :username ")
+                .setParameter("username", username).setParameter("car", car).getResultList();
+        return (users.size() == 1 ? users.get(0) : null);
+    }
+}

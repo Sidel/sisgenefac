@@ -1,0 +1,85 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import com.fabrica.sisgene.service.UsuarioPersonaService;
+import com.fabrica.sisgene.util.Criptografo;
+import javax.json.JsonObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import javax.servlet.http.HttpServletRequest;
+import com.fabrica.sisgene.vo.Result;
+import static com.fabrica.sisgene.web.SecurityHelper.SESSION_ATTRIB_USER;
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
+import javax.servlet.http.HttpSession;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+/**
+ * Method:  POST
+ * URL:     http://localhost:8080/sisgene/api/auth/session
+ * Body:
+ *          {
+ *              "usuario": "49898877OSIN20151",
+ *              "clave": "vzj49898877"
+ *          }
+ */
+
+@Controller
+@RequestMapping("/auth")
+public class SeguridadHandler extends AbstractHandler {
+
+    @Autowired
+    protected UsuarioPersonaService usuPerService;
+
+    @RequestMapping(value = "/session", method = RequestMethod.POST, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String login( @RequestBody String jsonData, HttpServletRequest request ) {
+        JsonObject jsonObjeto = parseJsonObject(jsonData);
+        Result<UsuarioPersona> usuarioPersona = usuPerService.finByUsernamePassword(
+                jsonObjeto.getString("usuario"), jsonObjeto.getString("clave"));
+
+        Criptografo crp = new Criptografo();
+
+        if (usuarioPersona.isSuccess() && crp.desencripta(usuarioPersona.getData().getUsuId().getUsuClave()).equals(jsonObjeto.getString("clave"))) {
+            JsonObjectBuilder constructor = Json.createObjectBuilder();
+            constructor.add("success", true);
+
+            UsuarioPersona userPersonJson = usuarioPersona.getData();
+            String usuario = userPersonJson.getUsuId().getUsuUsuario();
+            String rol = userPersonJson.getUsuId().getRolId().getRolDescripcion();
+
+            String nombrePersona = userPersonJson.getPerId().getPerapPaterno() + " " + userPersonJson.getPerId().getPerapMaterno()
+                    + ", " + userPersonJson.getPerId().getPerNombres();
+            constructor.add("data", Json.createObjectBuilder()
+                    .add("usuario", usuario)
+                    .add("nombre", nombrePersona)
+                    .add("rol", rol.toUpperCase())
+            );
+            HttpSession session = request.getSession(true);
+            session.setAttribute(SESSION_ATTRIB_USER, userPersonJson);
+            return toJsonString(constructor.build());
+        } else {
+            return getJsonErrorMsg("Usuario y/o Contraseña incorrecta");
+        }
+    }
+
+    @RequestMapping(value = "/session", method = RequestMethod.DELETE, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String logout(HttpServletRequest request) {
+
+        HttpSession session = request.getSession(true);
+        session.removeAttribute(SESSION_ATTRIB_USER);
+        return getJsonSuccessMsg("User logged out...");
+    }
+}

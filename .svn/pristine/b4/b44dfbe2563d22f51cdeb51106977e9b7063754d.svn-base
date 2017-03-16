@@ -1,0 +1,139 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.DetEncuesta;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import javax.persistence.Query;
+
+@Repository("detEncDao")
+@Transactional
+public class DetEncuestaDaoImpl extends GenericDaoImpl<DetEncuesta, String> implements DetEncuestaDao {
+
+    public DetEncuestaDaoImpl() {
+        super(DetEncuesta.class);
+    }
+
+    @Override
+    public List<DetEncuesta> findByEncuesta(CaratulaEncuesta car) {
+        
+        List<DetEncuesta> rol = (List<DetEncuesta>) em.createNativeQuery(
+                "select det.*, p.pre_id, p.pre_tipo_rpta, sec.sec_numero_seccion, ee.sus_id_nivel1, ss.sus_numero_subseccion "
+                + " from Estructura_Encuesta ee "
+                + " inner join Pregunta p on ee.pre_id = p.pre_id "
+                + " inner join Det_encuesta det on det.ese_id = ee.ese_id "
+                + " inner join Seccion sec on sec.sec_id = ee.sec_id "
+                + " left join Sub_seccion ss on ss.sus_id = ee.sus_id_nivel1 "
+                + " where det.cae_id =?1 "
+                + " order by "
+                + " cast(cast(sec.sec_numero_seccion as unsigned) as signed) asc, "
+//                + " cast(cast(ss.sus_numero_subseccion as unsigned) as signed) asc, " // añadido al final para ordernar por subseccion
+                + " cast(cast(p.pre_numero as unsigned) as signed) asc ")
+                .setParameter("1", car.getId())
+                .getResultList();
+        return rol;
+    }
+
+    @Override
+    public DetEncuesta findByEncuesta(String enc, int idPreg) {
+        List<DetEncuesta> rol = em.createQuery("select det from DetEncuesta det where det.caeId.caeCodigo=:enc and det.eseId.preId.preNumero=:idPreg")
+                .setParameter("enc", enc)
+                .setParameter("idPreg", String.valueOf(idPreg))
+                .getResultList();
+        return (rol.size()==1? rol.get(0): null);
+    }
+    
+    @Override
+    public boolean validarNumeroPregunta(String codigoEncuesta, String numeroSeccion, String numeroPregunta) {
+        System.out.println("validarNumeroPregunta....");
+        System.out.println("codigoEncuesta:" + codigoEncuesta);
+        System.out.println("numeroSeccion:" + numeroSeccion);
+        System.out.println("numerPregunta:" + numeroPregunta);
+       List<DetEncuesta> lista = em.createNativeQuery(
+               "select * from Det_Encuesta dee "
+                + " inner join Caratula_Encuesta cae on cae.cae_id = dee.cae_id "
+                + " inner join Estructura_Encuesta ese on ese.ese_id = dee.ese_id "
+                + " inner join Pregunta pre on pre.pre_id = ese.pre_id "
+                + " inner join Seccion sec on sec.sec_id = ese.sec_id "
+                +  " where cae.cae_codigo = ?1 "
+                + " and sec.sec_numero_seccion = ?2 "
+               + "  and pre.pre_numero = ?3 ")
+               .setParameter("1", codigoEncuesta)
+               .setParameter("2", numeroSeccion)
+               .setParameter("3", numeroPregunta)
+               .getResultList();
+       return ( lista.size() == 0 ? true : false);
+    }
+
+    @Override
+    public int getUltimoNumeroPregunta(String codigoEncuesta, String numeroSeccion) {
+        int numeroPregunta = -1;
+        Query query = em.createQuery(
+               "select max(dee.eseId.preId.preNumero) from DetEncuesta dee "
+                +  " where dee.caeId.caeCodigo =:codigoEncuesta "
+                + " and dee.eseId.secId.secNumeroSeccion =:numeroSeccion ")
+               .setParameter("codigoEncuesta", codigoEncuesta)
+               .setParameter("numeroSeccion", numeroSeccion);
+
+        Object objMaximo = query.getSingleResult();
+        String valor = objMaximo.toString();
+        numeroPregunta = Integer.parseInt(valor);
+        return numeroPregunta;
+    }
+
+    @Override
+    public List<Object[]> findByDetalleEncPorHogar(CaratulaEncuesta car) {
+        
+        System.out.println("car.getId:" + car.getId());
+        List<Object[]> listaDetEnc = em.createNativeQuery(
+                  " select sec.sec_numero_seccion, "
+                + " ss.sus_numero_subseccion, "
+                + " p.pre_numero, "
+                + " p.pre_enunciado, "
+                + " p.pre_tipo_rpta, "
+                + " p.pre_id, "
+                + " p.pre_unica_persona "
+                + " from Estructura_Encuesta ee "
+                + " inner join Pregunta p on ee.pre_id = p.pre_id "
+                + " inner join Det_encuesta det on det.ese_id = ee.ese_id "
+                + " inner join Seccion sec on sec.sec_id = ee.sec_id "
+                + " left join Sub_seccion ss on ss.sus_id = ee.sus_id_nivel1 "
+                + " where det.cae_id =?1 "
+//                + " and p.pre_unica_persona = 1 "
+                + " order by "
+                + " cast(cast(sec.sec_numero_seccion as unsigned) as signed) asc, "
+                + " cast(cast(ss.sus_numero_subseccion as unsigned) as signed) asc, "
+                + " cast(cast(p.pre_numero as unsigned) as signed) asc ")
+                .setParameter("1", car.getId())
+                .getResultList();
+        return listaDetEnc;
+    }
+    
+    @Override
+    public List<Object[]> findByDetalleEncPorPersonas(CaratulaEncuesta car) {
+        
+//        System.out.println("car.getId:" + car.getId());
+        List<Object[]> listaDetEnc = em.createNativeQuery(
+                  " select sec.sec_numero_seccion, "
+                + " ss.sus_numero_subseccion, "
+                + " p.pre_numero, "
+                + " p.pre_enunciado, "
+                + " p.pre_tipo_rpta, "
+                + " p.pre_id "
+                + " from Estructura_Encuesta ee "
+                + " inner join Pregunta p on ee.pre_id = p.pre_id "
+                + " inner join Det_encuesta det on det.ese_id = ee.ese_id "
+                + " inner join Seccion sec on sec.sec_id = ee.sec_id "
+                + " left join Sub_seccion ss on ss.sus_id = ee.sus_id_nivel1 "
+                + " where det.cae_id =?1 "
+                + " and p.pre_unica_persona = 0 "
+                + " order by "
+                + " cast(cast(sec.sec_numero_seccion as unsigned) as signed) asc, "
+                + " cast(cast(ss.sus_numero_subseccion as unsigned) as signed) asc, "
+                + " cast(cast(p.pre_numero as unsigned) as signed) asc ")
+                .setParameter("1", car.getId())
+                .getResultList();
+        return listaDetEnc;
+    }
+}

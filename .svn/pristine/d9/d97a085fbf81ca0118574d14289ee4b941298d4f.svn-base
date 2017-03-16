@@ -1,0 +1,26 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Item;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("itemDao")
+@Transactional
+public class ItemDaoImpl extends GenericDaoImpl<Item, String> implements ItemDao {
+
+    public ItemDaoImpl() {
+        super(Item.class);
+    }
+
+    @Override
+    public List<Item> findByEncuesta(CaratulaEncuesta car) {
+        List<Item> rol = em.createQuery("select det from DetEncuesta det where det.caeId =:car ")
+                .setParameter("car", car)
+                .getResultList();
+        return rol;
+    }
+
+
+}

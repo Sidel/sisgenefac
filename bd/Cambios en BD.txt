@@ -1,0 +1,13 @@
+usuario_rol
+
+usr_id = 1
+usu_id = 134
+rol_id = 1
+est_id = NULL
+pro_id = NULL
+usr_esado = A
+___________________
+usuario
+usu_id = 134
+usu_usuario = ADMIN
+usu_clave = admin

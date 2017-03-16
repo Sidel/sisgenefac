@@ -1,0 +1,194 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.AccesoDao;
+import com.fabrica.sisgene.dao.FuncionalidadDao;
+import com.fabrica.sisgene.dao.RolDao;
+import java.util.List;
+import com.fabrica.sisgene.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+//@Service("parametroService")
+@Service("rolService")
+public class RolServiceImpl extends AbstractService implements RolService {
+
+    @Autowired
+    protected RolDao rolDao;
+
+    @Autowired
+    protected AccesoDao accDao;
+
+    @Autowired
+    protected FuncionalidadDao funDao;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+    List<String> agregados = null;
+
+    public RolServiceImpl() {
+        super();
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<Rol> encontrar(int idCompany) {
+
+        Rol company = rolDao.findByRolId(idCompany);
+        if (company == null) {
+            return ResultFactory.getNotFoundResult();
+        }
+        return ResultFactory.getSuccessResult(company);
+    }
+
+    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+    @Override
+    public Result<Rol> guardar(
+            String codigo,
+            String nombre) {
+
+        Rol rolb = rolDao.findByRolCodigo(codigo.trim());
+        if (rolb != null) {
+            return ResultFactory.getFailResult("Rol no registrado. Existe un Rol con el codigo " + codigo);
+        } else {
+            Rol carEnc = new Rol();
+            carEnc.setRolId(5);
+            carEnc.setRolCodigo(codigo);
+            carEnc.setRolDescripcion(nombre);
+
+            rolDao.persist(carEnc);
+
+            return ResultFactory.getSuccessResult(carEnc);
+        }
+
+    }
+
+    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+    @Override
+    public Result<Rol> actualizar(
+            int idRol,
+            String codigo,
+            String nombre,
+            List<AccesoUtil> accesos) {
+
+        Rol rol;
+
+        if (accesos == null) {
+            System.out.println("mod solo rol");
+            List<Rol> listaRoles = rolDao.encontrarTodo();
+
+            boolean encontro = false;
+            for (Rol rolN : listaRoles) {
+//                System.out.println("rolN.getRolCodigo():" + rolN.getRolCodigo() + " codigo;" + codigo + " carat.getCaeId():" + rolN.getRolId() + " idcarat:" + idRol);
+                if ((!rolN.getRolId().equals(idRol)) && rolN.getRolCodigo().equals(codigo.trim())) {
+                    System.out.println("encontro");
+                    encontro = true;
+                }
+            }
+
+            if (encontro) {
+                return ResultFactory.getFailResult("Rol no modificado. Ya existe un rol con el codigo=" + codigo);
+            } else {
+                rol = rolDao.findByRolId(idRol);
+                if (rol == null) {
+                    return ResultFactory.getFailResult("No se encontro Rol con ID=" + codigo);
+                }
+
+                rol.setRolCodigo(codigo);
+                rol.setRolDescripcion(nombre);
+
+                if (rol.getId() == null) {
+
+                    rolDao.persist(rol);
+                } else {
+                    rol = rolDao.merge(rol);
+                }
+
+                return ResultFactory.getSuccessResult(rol);
+            }
+
+        } else {
+
+            System.out.println("lista accesos no es nulo");
+
+            rol = rolDao.findByRolId(idRol);
+            if (rol == null) {
+                return ResultFactory.getFailResult("No se encontro Rol con ID=" + codigo);
+            }
+//            }
+
+            agregados = new ArrayList<>();
+
+            try {
+//                System.out.println("rol encntradoo:" + rol.getRolCodigo());
+//                System.out.println("sizee:" + rol.getRolCodigo());
+//                System.out.println("sizee:" + rol.getRolDescripcion());
+
+                accDao.eliminarAccesos(rol);
+
+                for (AccesoUtil acU : accesos) {
+                    if (!encontrar(acU.getDescripcion())) {
+//                        System.out.println("agregando acceso");
+                        Acceso acceso = new Acceso();
+                        acceso.setFunId(funDao.findByFunNombre(acU.getDescripcion()));
+                        acceso.setRolId(rol);
+                        accDao.persist(acceso);
+//                        System.out.println("agrega funcionalodad "+acU.getDescripcion());
+                        agregados.add(acU.getDescripcion());
+                    }else{
+//                        System.out.println("ya habia una funcionalidad igual");
+                    }
+
+                    //accDao.merge(rol);
+                }
+
+                return ResultFactory.getSuccessResult(rol);
+
+            } catch (Exception e) {
+                return ResultFactory.getFailResult("Error: No se actualizo los accesos del rol " + idRol);
+            }
+
+        }
+
+    }
+
+    public boolean encontrar(String nombreFun) {
+        boolean encontro = false;
+        for (String nom : agregados) {
+            if (nom.equals(nombreFun)) {
+                encontro = true;
+            }
+        }
+//        encontro= false;
+        return encontro;
+    }
+
+    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+    @Override
+    public Result<Rol> eliminar(int idParametro) {
+
+        Rol rol = rolDao.findByRolId(idParametro);
+
+        if (rol == null) {
+            return ResultFactory.getFailResult("No se puede cargar el Rol para removerlo con el ID=" + idParametro);
+        } else {
+            rolDao.remove(rol);
+            String msg = "Rol " + rol.getId() + " fue eliminada ";//por " + nombreUsuario;
+            logger.info(msg);
+            return ResultFactory.getSuccessResultMsg(msg);
+        }
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<List<Rol>> encontrarTodo() {
+        return ResultFactory.getSuccessResult(rolDao.findAll());
+    }
+
+}

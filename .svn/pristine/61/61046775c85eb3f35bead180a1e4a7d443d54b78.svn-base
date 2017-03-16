@@ -1,0 +1,1265 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.dao.SubSeccionDao;
+import com.fabrica.sisgene.domain.*;
+import com.fabrica.sisgene.service.CaratulaEncuestaService;
+import com.fabrica.sisgene.service.CatalogoService;
+import com.fabrica.sisgene.service.DetEncuestaService;
+import com.fabrica.sisgene.service.PreguntaItemService;
+import com.fabrica.sisgene.service.PreguntaOpcionService;
+import com.fabrica.sisgene.service.PreguntaService;
+import com.fabrica.sisgene.service.SeccionService;
+import com.fabrica.sisgene.vo.Result;
+import static com.fabrica.sisgene.web.AbstractHandler.getJsonErrorMsg;
+import static com.fabrica.sisgene.web.AbstractHandler.getJsonSuccessMsg;
+import static com.fabrica.sisgene.web.AbstractHandler.toJsonString;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import javax.json.JsonValue;
+import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping("/cuestionarios")
+public class CuestionarioHandler extends AbstractHandler {
+
+    @Autowired
+    protected CaratulaEncuestaService carServ;
+
+    @Autowired
+    protected SeccionService seccServ;
+
+    @Autowired
+    protected CatalogoService catServ;
+
+    @Autowired
+    protected DetEncuestaService detServ;
+
+    @Autowired
+    protected PreguntaOpcionService pregOpServ;
+
+    @Autowired
+    protected SubSeccionDao subssDao;
+
+    @Autowired
+    protected DetEncuestaService detEncServ;
+
+    @Autowired
+    protected PreguntaService pregServ;
+
+    @Autowired
+    protected PreguntaItemService pregItemServ;
+    
+    @RequestMapping(value = "/{encuesta}", method = RequestMethod.POST, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String storePregunta(
+            @RequestBody String jsonData,
+            @PathVariable(value = "encuesta") String encuesta,
+            HttpServletRequest request) {
+
+        System.out.println("grabar Pregunta...");
+        JsonObject jsonObj = parseJsonObject(jsonData);
+        int tipo = jsonObj.getJsonObject("tipo").getInt("id");
+        
+        try {
+            String comnet = "";
+            boolean bool_multipersona = false;
+            int pregunta_unica_persona = 1;
+            try {
+                boolean keyComentario = jsonObj.containsKey("comentario");
+                if ( keyComentario == true ) {
+                    comnet = jsonObj.getString("comentario");
+                }
+                bool_multipersona = jsonObj.getBoolean("multipersona");
+                if ( true == bool_multipersona ) {
+                    pregunta_unica_persona = 0;
+                }
+            } catch (Exception e) {
+                comnet = "";
+                pregunta_unica_persona = 1;
+                System.out.println("Exception:" + e.getMessage());
+            }
+
+            List<Map> filasS = null;
+            List<Map> columnas = null;
+            Result<Pregunta> ar = null;
+            
+            int ultimoNumeroPregunta;
+            String numeroSeccion = String.valueOf(jsonObj.getInt("seccion"));
+            String numeroPregunta = String.valueOf(jsonObj.getInt("numero"));
+            
+            System.out.println("encuesta:" + encuesta);
+            System.out.println("numeroSeccion:" + numeroSeccion);
+            System.out.println("numeroPregunta:" + numeroPregunta);
+            
+            boolean validoNumeroPregunta = pregServ.validarNumeroPregunta(encuesta, numeroSeccion, numeroPregunta);
+            boolean validoValoresOpciones = false;
+            List lstValores = null;
+            
+            if ( validoNumeroPregunta ) {
+                switch (tipo) {
+                    case 1: // RESPUESTA ÚNICA
+                        filasS = new ArrayList<Map>();
+                        JsonArray filas = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+
+                        Iterator<JsonValue> iterator = filas.iterator();
+                        lstValores = new ArrayList();
+                        
+                        while (iterator.hasNext()) {
+                            JsonObject tip = (JsonObject) iterator.next();
+                            Map mapaOpcion = new HashMap();
+                            mapaOpcion.put("opcion", tip.getString("opcion"));
+                            mapaOpcion.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            filasS.add(mapaOpcion);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+                        int i;
+                        try {
+                            i = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            i = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones( lstValores, tipo );
+                        
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    i,
+                                    jsonObj.getString("descripcion"),
+                                    comnet,
+                                    pregunta_unica_persona,
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    0,
+                                    false,
+                                    null);
+                        }
+                        break;
+                        
+                    case 2: // RESPUESTA MÚLTIPLE
+                        filasS = new ArrayList<Map>();
+                        JsonArray filass = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+                        
+                        Iterator<JsonValue> iterators = filass.iterator();
+                        lstValores = new ArrayList();
+                        
+                        while (iterators.hasNext()) {
+                            JsonObject tip = (JsonObject) iterators.next();
+                            Map mapaOpcion = new HashMap();
+                            mapaOpcion.put("opcion", tip.getString("opcion"));
+                            mapaOpcion.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            filasS.add(mapaOpcion);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+                        int j;
+                        try {
+                            j = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            j = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones(lstValores, tipo);
+
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    j,
+                                    jsonObj.getString("descripcion"),
+                                    comnet,
+                                    pregunta_unica_persona,
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    0,
+                                    false,
+                                    null);
+                        }
+                        break;
+
+                    case 3: // RESPUESTA ABIERTA
+                        validoValoresOpciones = true;
+                        int subseccion;
+                        try {
+                            subseccion = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            subseccion = 0;
+                        }
+
+                        String subtipo = jsonObj.getString("subtipo");
+                        String tipoNumerico = "";
+                        double desde = -1, hasta = -1;
+
+                        if ( "numerico".equals(subtipo) ) {
+                            tipoNumerico = jsonObj.getString("tipoNumerico");
+                            desde = Double.valueOf(String.valueOf(jsonObj.getJsonNumber("desde")));
+                            hasta = Double.valueOf(String.valueOf(jsonObj.getJsonNumber("hasta")));
+                        } else {
+                            tipoNumerico = null;
+                            desde = -1.00;
+                            hasta = -1.00;
+                        }
+
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardarPreguntaAbierta(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    subseccion,
+                                    pregunta_unica_persona,
+                                    subtipo,
+
+                                    tipoNumerico,
+                                    desde,
+                                    hasta,
+
+                                    jsonObj.getString("descripcion"),
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    comnet);
+                        }
+                        break;
+
+                    case 4: // RESPUESTA MATRIZ SIMPLE
+                        JsonArray filaso;
+                        Iterator<JsonValue> iteratoro;
+                        JsonArray filasi;
+                        Iterator<JsonValue> iteratori;
+                        try {
+                            filaso = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+                            iteratoro = filaso.iterator();
+                            filasi = jsonObj.getJsonObject("tipo").getJsonArray("columnas");
+                            iteratori = filasi.iterator();
+                        } catch (Exception e) {
+                            return getJsonErrorMsg("No se agrego pregunta. Ingrese al menos una fila o una columna");
+                        }
+                        filasS = new ArrayList<Map>();
+
+                        while (iteratoro.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratoro.next();
+                            Map mapaFila = new HashMap();
+                            mapaFila.put("opcion", tip.getString("opcion"));
+                            filasS.add(mapaFila);
+                        }
+                        columnas = new ArrayList<Map>();
+                        lstValores = new ArrayList();
+                        
+                        while (iteratori.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratori.next();
+                            Map mapaColumna = new HashMap();
+                            mapaColumna.put("opcion", tip.getString("opcion"));
+                            mapaColumna.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            columnas.add(mapaColumna);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+                        int m;
+                        try {
+                            m = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            m = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones( lstValores, tipo );
+                        
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    m,
+                                    jsonObj.getString("descripcion"),
+                                    comnet,
+                                    pregunta_unica_persona,
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    0,
+                                    false,
+                                    columnas);
+                        }
+                        break;
+
+                    case 5: // RESPUESTA MATRIZ MÚLTIPLE
+                        Iterator<JsonValue> iteratorm;
+                        JsonArray filasm;
+                        JsonArray filasc;
+                        Iterator<JsonValue> iteratorc;
+                        try {
+                            filasm = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+                            iteratorm = filasm.iterator();
+                            filasc = jsonObj.getJsonObject("tipo").getJsonArray("columnas");
+                            iteratorc = filasc.iterator();
+                        } catch (Exception e) {
+                            return getJsonErrorMsg("No se agrego pregunta. Ingrese al menos una fila o una columna");
+                        }
+                        filasS = new ArrayList<Map>();
+
+                        while (iteratorm.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratorm.next();
+                            Map mapaFila = new HashMap();
+                            mapaFila.put("opcion", tip.getString("opcion"));
+                            filasS.add(mapaFila);
+                        }
+
+                        columnas = new ArrayList<Map>();
+                        lstValores = new ArrayList();
+                        
+                        while (iteratorc.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratorc.next();
+                            Map mapaColumna = new HashMap();
+                            mapaColumna.put("opcion", tip.getString("opcion"));
+                            mapaColumna.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            columnas.add(mapaColumna);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+
+                        int n;
+                        try {
+                            n = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            n = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones( lstValores, tipo );
+                        
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    n,
+                                    jsonObj.getString("descripcion"),
+                                    comnet,
+                                    pregunta_unica_persona,
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    0,
+                                    false,
+                                    columnas);
+                        }
+                        break;
+
+                    case 6: // RESPUESTA MIXTA
+                        Iterator<JsonValue> iteratoru;
+                        JsonArray filasu;
+                        try {
+                            filasS = new ArrayList<Map>();
+                            filasu = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+                            iteratoru = filasu.iterator();
+                        } catch (Exception e) {
+                            return getJsonErrorMsg("No se agrego pregunta. Ingrese al menos una opcion");
+                        }
+                        lstValores = new ArrayList();
+                        
+                        while (iteratoru.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratoru.next();
+                            Map mapaOpcion = new HashMap();
+                            mapaOpcion.put("opcion", tip.getString("opcion"));
+                            mapaOpcion.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            filasS.add(mapaOpcion);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+                        int t;
+                        try {
+                            t = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            t = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones( lstValores, tipo );
+                        
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    t,
+                                    jsonObj.getString("descripcion"),
+                                    comnet,
+                                    pregunta_unica_persona,
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    jsonObj.getInt("numeroRespuestasMaximo"),
+                                    jsonObj.getBoolean("ordenada"),
+                                    null);
+                        }
+                        break;
+                }
+            }
+
+            if ( !validoNumeroPregunta  ) {
+                ultimoNumeroPregunta = pregServ.getUltimoNumeroPregunta(encuesta, numeroSeccion);
+                return getJsonErrorMsg("El Nº de pregunta ya existe, el último Nº ingresado es " + ultimoNumeroPregunta);
+
+            } else if ( !validoValoresOpciones ){
+                return getJsonErrorMsg("No se permiten ingresar valores repetidos.");
+                
+            } else {
+                if (ar.isSuccess()) {
+                    return getJsonSuccessMsg(ar.getMsg());
+
+                } else {
+                        return getJsonErrorMsg("No se agregó pregunta de encuesta");
+                }
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return getJsonErrorMsg("No se agregó pregunta de encuesta");
+        }
+    }
+
+    // @SISGENE - 2º ETAPA
+    public String guardarNuevaPregunta(String jsonData, String encuesta) {
+        System.out.println("GUARDAR NUEVA PREGUNTA - 2DA ETAPA");
+        JsonObject jsonObj = parseJsonObject(jsonData);
+        int tipo = jsonObj.getJsonObject("tipo").getInt("id");
+        List lstValores = null;
+        boolean validoValoresOpciones = false;
+
+        try {
+            List<Map> filasS = null;
+            List<Map> columnas = null;
+            Result<Pregunta> ar = null;
+
+            String comentario = "";
+            boolean bool_multipersona;
+            int pregunta_unica_persona = 1;
+            
+            int ultimoNumeroPregunta;
+            String numeroSeccion = String.valueOf(jsonObj.getInt("seccion"));
+            String numeroPregunta = String.valueOf(jsonObj.getInt("numero"));
+            System.out.println("(CuestionarioHandler-guardarNuevaPregunta-numero):" + numeroPregunta);
+            
+            try {
+                boolean keyComentario = jsonObj.containsKey("comentario");
+                if ( keyComentario == true ) {
+                    comentario = jsonObj.getString("comentario");
+                }
+                bool_multipersona = jsonObj.getBoolean("multipersona");
+                if ( true == bool_multipersona ) {
+                    pregunta_unica_persona = 0;
+                }
+            } catch (Exception e) {
+                comentario = "";
+                pregunta_unica_persona = 1;
+            }
+
+            boolean validoNumeroPregunta = pregServ.validarNumeroPregunta(encuesta, numeroSeccion, numeroPregunta);
+            System.out.println("MODIFICAR-GUARDAR NUEVA PREGUNTA");
+            
+            if ( validoNumeroPregunta ) {
+                switch (tipo) {
+                    case 1: // RESPUESTA ÚNICA
+                        filasS = new ArrayList<Map>();
+                        JsonArray filas = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+                        Iterator<JsonValue> iterator = filas.iterator();
+                        lstValores = new ArrayList();
+
+                        while (iterator.hasNext()) {
+                            JsonObject tip = (JsonObject) iterator.next();
+                            Map mapaOpcion = new HashMap();
+                            mapaOpcion.put("opcion", tip.getString("opcion"));
+                            mapaOpcion.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            filasS.add(mapaOpcion);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+                        int i;
+                        try {
+                            i = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            i = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones( lstValores, tipo );
+
+                        System.out.println("(CuestionarioHandler-numero):" + jsonObj.getInt("numero"));
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    i,
+                                    jsonObj.getString("descripcion"),
+                                    comentario,
+                                    pregunta_unica_persona,
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    0,
+                                    false,
+                                    null);
+                        }
+                        break;
+
+                    case 2: // RESPUESTA MÚLTIPLE
+                        filasS = new ArrayList<Map>();
+                        JsonArray filass = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+                        Iterator<JsonValue> iterators = filass.iterator();
+                        lstValores = new ArrayList();
+
+                        while (iterators.hasNext()) {
+                            JsonObject tip = (JsonObject) iterators.next();
+                            Map mapaOpcion = new HashMap();
+                            mapaOpcion.put("opcion", tip.getString("opcion"));
+                            mapaOpcion.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            filasS.add(mapaOpcion);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+                        int j;
+                        try {
+                            j = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            j = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones( lstValores, tipo );
+
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    j,
+                                    jsonObj.getString("descripcion"),
+                                    comentario,
+                                    pregunta_unica_persona,
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    0,
+                                    false,
+                                    null);
+                        }
+                        break;
+
+                    case 3: // RESPUESTA ABIERTA
+                        validoValoresOpciones = true;
+                        int subseccion;
+                        try {
+                            subseccion = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            subseccion = 0;
+                        }
+
+                        String subtipo = jsonObj.getString("subtipo");
+                        // tipoNumerico, desde y hasta que valores tendrán x DEFECTO si pregunta no es numerico ("" o null, 0 ó -1)
+                        String tipoNumerico = "";
+                        double desde = -1, hasta = -1;
+
+                        if ( "numerico".equals(subtipo) ) {
+                            tipoNumerico = jsonObj.getString("tipoNumerico");
+                            desde = Double.valueOf(String.valueOf(jsonObj.getJsonNumber("desde")));
+                            hasta = Double.valueOf(String.valueOf(jsonObj.getJsonNumber("hasta")));
+                        } else {
+                            tipoNumerico = null;
+                            desde = -1.00;
+                            hasta = -1.00;
+                        }
+
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardarPreguntaAbierta(
+                                encuesta,
+                                jsonObj.getInt("numero"),
+                                jsonObj.getInt("seccion"),
+                                subseccion,
+                                pregunta_unica_persona,
+                                subtipo,
+
+                                tipoNumerico,
+                                desde,
+                                hasta,
+
+                                jsonObj.getString("descripcion"),
+                                jsonObj.getJsonObject("tipo").getInt("id"),
+                                jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                comentario);
+                        }
+                        break;
+
+                    case 4: // RESPUESTA MATRIZ SIMPLE
+                        JsonArray filaso;
+                        Iterator<JsonValue> iteratoro;
+                        JsonArray filasi;
+                        Iterator<JsonValue> iteratori;
+                        try {
+                            filaso = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+                            iteratoro = filaso.iterator();
+                            filasi = jsonObj.getJsonObject("tipo").getJsonArray("columnas");
+                            iteratori = filasi.iterator();
+                        } catch (Exception e) {
+                            return getJsonErrorMsg("No se agrego pregunta. Ingrese al menos una fila o una columna");
+                        }
+
+                        filasS = new ArrayList<Map>();
+
+                        while (iteratoro.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratoro.next();
+                            Map mapaFila = new HashMap();
+                            mapaFila.put("opcion", tip.getString("opcion"));
+                            filasS.add(mapaFila);
+                        }
+
+                        columnas = new ArrayList<Map>();
+                        lstValores = new ArrayList();
+
+                        while (iteratori.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratori.next();
+                            Map mapaColumna = new HashMap();
+                            mapaColumna.put("opcion", tip.getString("opcion"));
+                            mapaColumna.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            columnas.add(mapaColumna);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+
+                        int m;
+                        try {
+                            m = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            m = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones( lstValores, tipo );
+
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    m,
+                                    jsonObj.getString("descripcion"),
+                                    comentario,
+                                    pregunta_unica_persona,
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    0,
+                                    false,
+                                    columnas);
+                        }
+                        break;
+
+                    case 5: // RESPUESTA MATRIZ MÚLTIPLE
+                        Iterator<JsonValue> iteratorm;
+                        JsonArray filasm;
+                        JsonArray filasc;
+                        Iterator<JsonValue> iteratorc;
+                        try {
+                            filasm = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+                            iteratorm = filasm.iterator();
+                            filasc = jsonObj.getJsonObject("tipo").getJsonArray("columnas");
+                            iteratorc = filasc.iterator();
+                        } catch (Exception e) {
+                            return getJsonErrorMsg("No se agrego pregunta. Ingrese al menos una fila o una columna");
+                        }
+
+                        filasS = new ArrayList<Map>();
+
+                        while (iteratorm.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratorm.next();
+                            Map mapaFila = new HashMap();
+                            mapaFila.put("opcion", tip.getString("opcion"));
+                            filasS.add(mapaFila);
+                        }
+
+                        columnas = new ArrayList<Map>();
+                        lstValores = new ArrayList();
+
+                        while (iteratorc.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratorc.next();
+                            Map mapaColumna = new HashMap();
+                            mapaColumna.put("opcion", tip.getString("opcion"));
+                            mapaColumna.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            filasS.add(mapaColumna);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+
+                        int n;
+                        try {
+                            n = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            n = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones( lstValores, tipo );
+
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    n,
+                                    jsonObj.getString("descripcion"),
+                                    comentario,
+                                    pregunta_unica_persona,
+
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    0,
+                                    false,
+                                    columnas);
+                        }
+                        break;
+
+                    case 6: // RESPUESTA MIXTA
+                        Iterator<JsonValue> iteratoru;
+                        JsonArray filasu;
+                        try {
+                            filasS = new ArrayList<Map>();
+                            filasu = jsonObj.getJsonObject("tipo").getJsonArray("filas");
+                            iteratoru = filasu.iterator();
+                        } catch (Exception e) {
+                            return getJsonErrorMsg("No se agrego pregunta. Ingrese al menos una opcion");
+                        }
+                        lstValores = new ArrayList();
+
+                        while (iteratoru.hasNext()) {
+                            JsonObject tip = (JsonObject) iteratoru.next();
+                            Map mapaOpcion = new HashMap();
+                            mapaOpcion.put("opcion", tip.getString("opcion"));
+                            mapaOpcion.put("valor", tip.getInt("valor")); // @LRC - 20/02/2016 - Se agregó valor
+                            filasS.add(mapaOpcion);
+                            lstValores.add(tip.getInt("valor"));
+                        }
+                        int t;
+                        try {
+                            t = jsonObj.getInt("subseccion");
+                        } catch (Exception e) {
+                            t = 0;
+                        }
+                        validoValoresOpciones = pregServ.validarValoresOpciones( lstValores, tipo );
+
+                        if ( validoValoresOpciones ) {
+                            ar = pregServ.guardar(
+                                    encuesta,
+                                    jsonObj.getInt("numero"),
+                                    jsonObj.getInt("seccion"),
+                                    t,
+                                    jsonObj.getString("descripcion"),
+                                    comentario,
+                                    pregunta_unica_persona,
+                                    jsonObj.getJsonObject("tipo").getInt("id"),
+                                    jsonObj.getJsonObject("tipo").getString("descripcion"),
+                                    filasS,
+                                    jsonObj.getInt("numeroRespuestasMaximo"),
+                                    jsonObj.getBoolean("ordenada"),
+                                    null);
+                        }
+                        break;
+                }
+            }
+
+            if ( !validoNumeroPregunta ) {
+                ultimoNumeroPregunta = pregServ.getUltimoNumeroPregunta(encuesta, numeroSeccion);
+                return getJsonErrorMsg("El Nº de pregunta ya existe el último Nº ingresado es " + ultimoNumeroPregunta);
+            
+            } else if ( !validoValoresOpciones ) {
+                return getJsonErrorMsg("No se permiten ingresar valores repetidos.");
+                
+            } else {
+                if ( ar.isSuccess() ) {
+                    return getJsonSuccessMsg("Pregunta agregada exitosamente");
+                } else {
+                    return getJsonErrorMsg("No se agrego nueva pregunta de encuesta");
+                }
+            }
+//            if (ar.isSuccess()) {
+//                return getJsonSuccessMsg("Pregunta agregada exitosamente");
+//            } else {
+//                return getJsonErrorMsg("No se agrego nueva pregunta de encuesta");
+//            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return getJsonErrorMsg("No se agrego nueva pregunta de encuesta");
+        }
+
+    }
+
+    @RequestMapping(value = "/{encuestaId}/secciones", method = RequestMethod.POST, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String storeSeccionesSub(
+            @RequestBody String jsonData,
+            @PathVariable(value = "encuestaId") String encuesta,
+            HttpServletRequest request) {
+
+        System.out.println("grabar Secciones Sub...");
+        Result<CaratulaEncuesta> enc = carServ.findByCodigo(encuesta);
+
+        if (enc.getData().getCaeFinicio().before(new Date())) {
+            return getJsonErrorMsg("No es posible modificar el cuestionario para la encuesta con codigo= " + encuesta + ". Encuesta ya iniciada");
+        } else {
+
+            JsonReader reader = Json.createReader(new StringReader(jsonData));
+            Result<List<Seccion>> listaSecciones = seccServ.listarSecciones(enc.getData());
+
+            JsonArray jsonObj = reader.readArray();
+            Iterator<JsonValue> iterator = jsonObj.iterator();
+            List<SeccionUtil> listaSecc = new ArrayList<>();
+
+            while (iterator.hasNext()) {
+                JsonObject jsonObjCh = (JsonObject) iterator.next();
+                JsonArray msg = jsonObjCh.getJsonArray("subsecciones");
+                List<SubseccionUtil> listaSubs = null;
+                
+                System.out.println("categoria:" + jsonObjCh.getString("categoria"));
+                
+                SeccionUtil secUt = new SeccionUtil(jsonObjCh.getInt("seccion"), jsonObjCh.getString("descripcion"), 
+                                                    jsonObjCh.getString("categoria"),
+                                                    null);
+                
+                if (!msg.toString().replaceAll("[\\\\]", "").equals("")) {
+                    listaSubs = new ArrayList<>();
+                    Iterator<JsonValue> iteraS = msg.iterator();
+
+                    while (iteraS.hasNext()) {
+                        try {
+                            JsonObject jsonObSubS = (JsonObject) iteraS.next();
+                            System.out.println("jsonObSubS.getInt(\"subseccion\"):" + jsonObSubS.getInt("subseccion"));
+                            listaSubs.add(new SubseccionUtil(jsonObSubS.getInt("subseccion"), jsonObSubS.getString("descripcion")));
+                            
+                        } catch (Exception e) {
+                            System.out.println("Excepcion:" + e.getMessage());
+                            break;
+                        }
+                    }
+                    secUt.setListaSubs(listaSubs);
+                }
+                listaSecc.add(secUt);
+            }
+
+            if (listaSecciones.getData().isEmpty()) {
+                try {
+                    boolean ar = seccServ.guardar(encuesta, listaSecc);
+                    if (ar) {
+                        return getJsonMsg("Estructura de la Encuesta registrada con éxito", true);
+
+                    } else {
+                        return getJsonErrorMsg("No se resgitró Secciones y/o subsecciones para el cuestionario");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return getJsonErrorMsg("No se resgitró Secciones y/o subsecciones para el cuestionario");
+                }
+            } else {
+                try {
+                    Result<Seccion> ar = seccServ.modificar(enc.getData(), listaSecc, listaSecciones.getData());
+                    if (ar.isSuccess()) {
+                        return getJsonMsg("Estructura de la Encuesta registrada con éxito", true);
+
+                    } else {
+                        return getJsonErrorMsg("No se modificó Secciones y/o subsecciones para el cuestionario, " + ar.getMsg());
+
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return getJsonErrorMsg("No se modificó Secciones y/o subsecciones para el cuestionario. Error");
+                }
+
+            }
+
+        }
+
+    }
+
+    // Cambiar el parametro idPreg (en realidad es codigo de pregunta, en vez de ello debe ser id de pregunta para poder eliminarlo como único, sino
+    // se repetirá).
+    @RequestMapping(value = "/{idencuesta}/{idPreg}", method = RequestMethod.DELETE, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String remove(
+            @PathVariable(value = "idencuesta") String idencuesta,
+            @PathVariable(value = "idPreg") int idPreg,
+            HttpServletRequest request) {
+
+        Result<CaratulaEncuesta> roles = carServ.findByCodigo(idencuesta);
+
+        if (roles.getData().getCaeFinicio().before(new Date())) {
+            return getJsonErrorMsg("No es posible modificar el cuestionario para la encuesta con codigo= " + idencuesta + ". Encuesta ya iniciada");
+            
+        } else {
+            System.out.println("idEncuesta:" + idencuesta);
+            System.out.println("idPreg:" + idPreg);
+            boolean param = detEncServ.eliminar(idencuesta,idPreg);
+            if (param) {
+                return getJsonSuccessMsg("Pregunta eliminada exitosamente");
+
+            } else {
+
+                return getJsonErrorMsg("Pregunta no eliminada");
+            }
+        }
+
+    }
+
+    public String eliminarPregunta(String idencuesta, int idPreg) {
+
+        Result<CaratulaEncuesta> roles = carServ.findByCodigo(idencuesta);
+
+        if (roles.getData().getCaeFinicio().before(new Date())) {
+            System.out.println("caso1");
+            return getJsonErrorMsg("No es posible modificar el cuestionario para la encuesta con codigo= " + idencuesta + ". Encuesta ya iniciada");
+        } else {
+            System.out.println("else..");
+            boolean param = detEncServ.eliminar(idencuesta, idPreg);
+            if (param) {
+                System.out.println("caso2");
+                return getJsonSuccessMsg("Pregunta eliminada exitosamente");
+
+            } else {
+                System.out.println("caso3");
+                return getJsonErrorMsg("Pregunta no eliminada");
+            }
+        }
+
+    }
+
+    @RequestMapping(value = "/{idencuesta}/{idPreg}", method = RequestMethod.PUT, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String update(
+            @RequestBody String jsonData,
+            @PathVariable(value = "idencuesta") String idencuesta,
+            @PathVariable(value = "idPreg") int idPreg,
+            HttpServletRequest request) {
+
+        System.out.println("update en cuestionarioHandler....");
+        System.out.println("jsonData" + jsonData);
+        JsonObject jsonObj = parseJsonObject(jsonData);
+        System.out.println("jsonObj:" + jsonObj);
+        int numeroAnterior = jsonObj.getInt("numeroAnterior"); // getJsonObject("tipo").getInt("id");
+        System.out.println("numeroAnterior:" + numeroAnterior);
+        
+        Result<CaratulaEncuesta> roles = carServ.findByCodigo(idencuesta);
+
+        if (roles.getData().getCaeFinicio().before(new Date())) {
+            return getJsonErrorMsg("No es posible modificar la pregunta para la encuesta con codigo= " 
+                                    + idencuesta + ". Encuesta ya iniciada");
+            
+        } else {
+            System.out.println("idencuesta:" + idencuesta);
+            System.out.println("idPreg:" + idPreg);
+//            String resultElim = eliminarPregunta(idencuesta, idPreg);
+            String resultElim = eliminarPregunta(idencuesta, numeroAnterior);
+            System.out.println("resultElim:" + resultElim);
+
+            if (resultElim.equals("{\"success\":true,\"msg\":\"Pregunta eliminada exitosamente\"}")) {
+                String resultGuard = guardarNuevaPregunta(jsonData, idencuesta);
+                System.out.println("resultGuard:" + resultGuard);
+
+                if (resultGuard.equals("{\"success\":true,\"msg\":\"Pregunta agregada exitosamente\"}")) {
+                    System.out.println("if1");
+                    return getJsonSuccessMsg("Pregunta modificada exitosamente");
+                    
+                } else {
+                    System.out.println("if2");
+                    System.out.println("1");
+                    return getJsonErrorMsg("Pregunta no modificada.");
+                }
+
+            } else {
+                System.out.println("if3");
+                System.out.println("2");
+                return getJsonErrorMsg("Pregunta no modificada.");
+            }
+        }
+
+    }
+//    
+//    @RequestMapping(value = "/{idencuesta}/{idPreg}", method = RequestMethod.PUT, produces = {"application/json"})
+//    @ResponseBody
+//    public String updateSecciones(
+//            @RequestBody String jsonData,
+//            @PathVariable(value = "idencuesta") String idencuesta,
+//            HttpServletRequest request) {
+//
+//        Result<CaratulaEncuesta> roles = carServ.findByCodigo(idencuesta);
+//
+//        if (roles.getData().getCaeFinicio().before(new Date())) {
+//            return getJsonErrorMsg("No es posible modificar la pregunta para la encuesta con codigo= " + idencuesta + ". Encuesta ya iniciada");
+//        } else {
+//
+//            String resultElim=eliminarPregunta(idencuesta, 1);//
+//            System.out.println("resultElim::"+resultElim);
+//            
+//            if (resultElim.equals("{\"success\":true,\"msg\":\"Pregunta eliminada exitosamente\"}")) {
+//
+//                String resultGuard=guardarNuevaPregunta(jsonData, idencuesta);
+//                System.out.println("resultGuard::"+resultGuard);
+//                
+//                if (resultGuard.equals("{\"success\":true,\"msg\":\"Pregunta agregada exitosamente\"}")) {
+//                    
+//                    return getJsonSuccessMsg("Pregunta modificada exitosamente");
+//                } else {
+//                    return getJsonErrorMsg("Pregunta no modificada.");
+//                }
+//
+//            } else {
+//
+//                return getJsonErrorMsg("Pregunta no modificada.");
+//
+//            }
+//        }
+//
+//    }
+
+    @RequestMapping(value = "/{encuestaId}", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String getCuestionario(
+            @PathVariable(value = "encuestaId") String encuestaId,
+            HttpServletRequest request) {
+
+        System.out.println("getCuestionario...");
+        Result<CaratulaEncuesta> roles = carServ.findByCodigo(encuestaId);
+
+        if (roles.isSuccess()) {
+            List<Seccion> listaSecciones = seccServ.listarSecciones(roles.getData()).getData();
+
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("success", true);
+
+            JsonObjectBuilder cuestionarios = Json.createObjectBuilder();
+            JsonArrayBuilder secciones = Json.createArrayBuilder();
+            JsonArrayBuilder preguntas = Json.createArrayBuilder();
+
+            try {
+                for (Seccion secc : listaSecciones) {
+
+                    JsonArrayBuilder subsecciones = Json.createArrayBuilder();
+                    List<SubSeccion> listaSubSs = subssDao.findByEnc(roles.getData(), secc);
+
+                    if (listaSubSs != null) {
+                        for (SubSeccion ss : listaSubSs) {
+                            JsonObjectBuilder subseccion = Json.createObjectBuilder();
+                            subseccion.add("subseccion", Integer.parseInt(ss.getSusNumeroSubseccion()))
+                                    .add("descripcion", ss.getSusNombre());
+
+                            subsecciones.add(subseccion);
+
+                        }
+                    }
+
+                    JsonObjectBuilder seccion = Json.createObjectBuilder();
+                    seccion.add("seccion", Integer.parseInt(secc.getSecNumeroSeccion()))
+                            .add("descripcion", secc.getSecNombre())
+                            .add("categoria", secc.getSecCategoria()) // Se agrega categoria
+                            .add("subsecciones", subsecciones);
+
+                    secciones.add(seccion);
+
+                }
+
+                List<DetEncuesta> listadetalle = detServ.finbyEncuesta(roles.getData()).getData();
+
+                if (listadetalle != null) {
+                    Iterator ite = listadetalle.iterator();
+                    while ( ite.hasNext() ) {
+                        Object[] obj = (Object[]) ite.next();
+                        
+                        JsonObjectBuilder pregunta = Json.createObjectBuilder();
+                        JsonObjectBuilder tipoPreg = Json.createObjectBuilder();
+                        int idPregunta = Integer.parseInt(String.valueOf(obj[3]));
+                        Pregunta preg = pregServ.encontrar(idPregunta).getData();
+//                        System.out.println("Seccion:" + );
+                        System.out.println("pregunta:" + preg.getPreNumero());
+                        String tipo = String.valueOf(obj[4]).substring(0, 2);
+                        Catalogo cat = catServ.encontrarPorGrupoSubGrupoCod(4, tipo).getData();
+
+                        JsonArrayBuilder filas = Json.createArrayBuilder();
+                        JsonArrayBuilder columnas = Json.createArrayBuilder();
+
+                        List<PreguntaOpcion> listaOpciones = new ArrayList<PreguntaOpcion>();
+                        List<PreguntaItem> listaItems = new ArrayList<PreguntaItem>();
+
+                        switch (tipo) {
+                            case "UN": // 1. Respuesta Única
+                                listaOpciones = pregOpServ.finbyEncuesta(preg).getData();
+                                if (listaOpciones != null) {
+                                    for (PreguntaOpcion opc : listaOpciones) {
+                                        JsonObjectBuilder opcion = Json.createObjectBuilder();
+                                        opcion.add("opcion", opc.getOpcId().getOpcNombre());
+                                        opcion.add("valor", opc.getProValor());
+                                        filas.add(opcion);
+                                    }
+                                }
+
+                                tipoPreg.add("id", cat.getCatSubGrupo())
+                                        .add("descripcion", cat.getCatNombre() == null ? "" : cat.getCatNombre())
+                                        .add("filas", filas);
+                                break;
+
+                            case "MU": // 2. Respuesta Múltiple
+                                listaOpciones = null;
+                                listaOpciones = pregOpServ.finbyEncuesta(preg).getData();
+
+                                if (listaOpciones != null) {
+                                    for (PreguntaOpcion opc : listaOpciones) {
+                                        JsonObjectBuilder opcion = Json.createObjectBuilder();
+                                        opcion.add("opcion", opc.getOpcId().getOpcNombre());
+                                        opcion.add("valor", opc.getProValor());
+                                        filas.add(opcion);
+                                    }
+                                }
+
+                                tipoPreg.add("id", cat.getCatSubGrupo())
+                                        .add("descripcion", cat.getCatNombre() == null ? "" : cat.getCatNombre())
+                                        .add("filas", filas);
+                                break;
+
+                            case "AB": // 3. Respuesta Abierta
+                                tipoPreg.add("id", cat.getCatSubGrupo())
+                                        .add("descripcion", cat.getCatNombre() == null ? "" : cat.getCatNombre());
+                                break;
+
+                            case "MS": // 4. Respuesta Matriz Simple
+                                listaOpciones = pregOpServ.finbyEncuesta(preg).getData();
+                                listaItems = pregItemServ.finbyEncuesta(preg).getData();
+                                
+
+                                if (listaOpciones != null) {
+                                    for (PreguntaOpcion opc : listaOpciones) {
+                                        JsonObjectBuilder opcion = Json.createObjectBuilder();
+                                        opcion.add("opcion", opc.getOpcId().getOpcNombre());
+                                        filas.add(opcion);
+                                    }
+                                }
+
+                                if (listaItems != null) {
+                                    for (PreguntaItem opc : listaItems) {
+                                        JsonObjectBuilder opcion = Json.createObjectBuilder();
+                                        opcion.add("opcion", opc.getIteId().getIteNombre());
+                                        opcion.add("valor", opc.getPriValor());
+                                        columnas.add(opcion);
+                                    }
+                                }
+
+                                tipoPreg.add("id", cat.getCatSubGrupo())
+                                        .add("descripcion", cat.getCatNombre() == null ? "" : cat.getCatNombre())
+                                        .add("filas", filas)
+                                        .add("columnas", columnas);
+                                break;
+
+                            case "MM": // 5. Respuesta Matriz Múltiple
+                                listaOpciones = pregOpServ.finbyEncuesta(preg).getData();
+                                listaItems = pregItemServ.finbyEncuesta(preg).getData();
+
+                                if (listaOpciones != null) {
+                                    for (PreguntaOpcion opc : listaOpciones) {
+                                        JsonObjectBuilder opcion = Json.createObjectBuilder();
+                                        opcion.add("opcion", opc.getOpcId().getOpcNombre());
+                                        filas.add(opcion);
+                                    }
+                                }
+
+                                if (listaItems != null) {
+                                    for (PreguntaItem opc : listaItems) {
+                                        JsonObjectBuilder opcion = Json.createObjectBuilder();
+                                        opcion.add("opcion", opc.getIteId().getIteNombre());
+                                        opcion.add("valor", opc.getPriValor());
+                                        columnas.add(opcion);
+                                    }
+                                }
+
+                                tipoPreg.add("id", cat.getCatSubGrupo())
+                                        .add("descripcion", cat.getCatNombre() == null ? "" : cat.getCatNombre())
+                                        .add("filas", filas)
+                                        .add("columnas", columnas);
+                                break;
+
+                            case "MI": // 6. Respuesta Matriz Mixta
+                                listaOpciones = pregOpServ.finbyEncuesta(preg).getData();
+                                if (listaOpciones != null) {
+                                    for (PreguntaOpcion opc : listaOpciones) {
+                                        JsonObjectBuilder opcion = Json.createObjectBuilder();
+                                        opcion.add("opcion", opc.getOpcId().getOpcNombre());
+                                        opcion.add("valor", opc.getProValor());
+                                        filas.add(opcion);
+                                    }
+                                }
+
+                                tipoPreg.add("id", cat.getCatSubGrupo())
+                                        .add("descripcion", cat.getCatNombre() == null ? "" : cat.getCatNombre())
+                                        .add("filas", filas);
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        int numeroSeccion = Integer.parseInt(String.valueOf(obj[5]));
+                        String susIdNivel1_otro = String.valueOf(obj[6]);
+                        String susIdNivel1 = String.valueOf(obj[6]);
+                        int susNumeroSubseccion = 0;
+                        if ( obj[7] != null ) {
+                            susNumeroSubseccion = Integer.parseInt(String.valueOf(obj[7]));
+                        }
+                        
+                        if (tipo.equals("MI")) {
+                            pregunta.add("numero", Integer.parseInt(preg.getPreNumero()))
+                                    .add("seccion", numeroSeccion)
+                                    .add("subseccion", susIdNivel1 == null ? 0 : susNumeroSubseccion)
+                                    .add("descripcion", preg.getPreEnunciado())
+                                    .add("comentario", preg.getPreComentario() == null ? "" : preg.getPreComentario())
+                                    .add("multipersona", preg.getPreUnicaPersona() == 1 ? false : true)
+                                    .add("tipo", tipoPreg)
+                                    .add("numeroRespuestasMaximo", preg.getPreCantMaximaItems())
+                                    .add("ordenada", preg.getPreimportaOrdenRptasMU() == '0' ? false : true);
+                        } else {
+                            pregunta.add("numero", Integer.parseInt(preg.getPreNumero()))
+                                    .add("seccion", numeroSeccion)
+                                    .add("subseccion", susIdNivel1 == null ? 0 : susNumeroSubseccion)
+                                    .add("descripcion", preg.getPreEnunciado())
+                                    .add("comentario", preg.getPreComentario() == null ? "" : preg.getPreComentario())
+                                    .add("multipersona", preg.getPreUnicaPersona() == 1 ? false : true)
+                                    .add("tipo", tipoPreg);
+                            
+                            if ( tipo.equals("AB") ) {
+                                pregunta.add("subtipo", preg.getPreSubtipo());
+                                
+                                if ( "numerico".equals(preg.getPreSubtipo()) ) {
+                                    pregunta.add("tipoNumerico", preg.getPreTipoNumerico());
+                                    pregunta.add("desde", preg.getPreDesde());
+                                    pregunta.add("hasta", preg.getPreHasta());
+                                }
+                            }
+                            if ( preg.getPreUnicaPersona() == 1 ) {
+                                System.out.println("false");
+                            } else {
+                                System.out.println("true");
+                            }
+                        }
+                        preguntas.add(pregunta);
+                    }
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return getJsonErrorMsg("No se encontro cuestionario para la encuesta con codigo= " + encuestaId);
+            }
+
+            cuestionarios.add("encuesta", encuestaId).add("secciones", secciones).add("preguntas", preguntas);
+            builder.add("cuestionarios", cuestionarios);
+            return toJsonString(builder.build());
+
+        } else {
+            return getJsonErrorMsg(roles.getMsg());
+
+        }
+
+    }
+
+}

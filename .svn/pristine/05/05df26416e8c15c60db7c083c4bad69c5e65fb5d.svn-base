@@ -1,0 +1,482 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.CaratulaEncuestaDao;
+import com.fabrica.sisgene.dao.DispositivoDao;
+import com.fabrica.sisgene.dao.GrupoDao;
+import com.fabrica.sisgene.dao.PersonaDao;
+import com.fabrica.sisgene.domain.Usuario;
+import com.fabrica.sisgene.dao.RolDao;
+import com.fabrica.sisgene.dao.TipoDocumentoDao;
+import com.fabrica.sisgene.dao.UbigeoDao;
+import com.fabrica.sisgene.dao.UsuarioDao;
+import com.fabrica.sisgene.dao.UsuarioPersonaDao;
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.domain.Persona;
+import com.fabrica.sisgene.domain.Rol;
+import com.fabrica.sisgene.domain.TipoDocumento;
+import com.fabrica.sisgene.domain.Ubigeo;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import static com.fabrica.sisgene.util.Constantes.DNI;
+import com.fabrica.sisgene.util.Criptografo;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import com.fabrica.sisgene.vo.UsuarioPorEncuesta;
+import java.util.ArrayList;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+
+@Transactional
+@Service("userService")
+public class UsuarioPersonaServiceImpl extends AbstractService implements UsuarioPersonaService {
+
+    @Autowired
+    protected RolDao rolDao;
+
+    @Autowired
+    protected CaratulaEncuestaDao carEncDao;
+
+    @Autowired
+    protected TipoDocumentoDao tipDocDao;
+
+    @Autowired
+    protected PersonaDao perDao;
+
+    @Autowired
+    protected DispositivoDao disDao;
+
+    @Autowired
+    protected GrupoDao grupoDao;
+
+    @Autowired
+    protected UsuarioPersonaDao usupDao;
+
+    @Autowired
+    protected UbigeoDao ubiDao;
+
+    @Autowired
+    protected UsuarioDao usuDao;
+
+    public UsuarioPersonaServiceImpl() {
+        super();
+    }
+
+    @Override
+    public Result<UsuarioPersona> guardar(UsuarioPersona usup) {
+        if (usupDao.guardar(usup)) {
+            return ResultFactory.getSuccessResult(usup);
+        } else {
+            return ResultFactory.getFailResult(NOT_FOUND);
+        }
+    }
+
+    @Override
+    public Result<UsuarioPersona> findByUsuId(Usuario id) {
+        return ResultFactory.getSuccessResult(usupDao.findByUsuId(id));
+    }
+
+    @Override
+    public Result<List<UsuarioPersona>> findAll() {
+        return ResultFactory.getSuccessResult(usupDao.findAll());
+    }
+
+    @Override
+    public Result<List<UsuarioPersona>> findByEncuesta(CaratulaEncuesta encuesta) {
+        return ResultFactory.getSuccessResult(usupDao.findbyEncuesta(encuesta));
+    }
+    
+    @Override
+    public Result<List<UsuarioPersona>> findByEncuestaGrupo(CaratulaEncuesta encuesta, Grupo grupo) {
+        return ResultFactory.getSuccessResult(usupDao.findbyEncuestaGrupo(encuesta, grupo));
+    }
+
+    @Override
+    public Result<UsuarioPersona> finByUsernamePassword(String usuario, String clave) {
+        UsuarioPersona userPersona = usupDao.finByUsernamePassword(usuario, clave);
+        if ( userPersona == null ) {
+            return ResultFactory.getFailResult("El usuario o contraseña es incorrecto");
+
+        } else {
+            return ResultFactory.getSuccessResult(userPersona);
+        }
+    }
+    
+    private UsuarioPorEncuesta validarUsuario(UsuarioPorEncuesta userExcel) {
+        
+        boolean valido = true;
+        String mensaje = "";
+        UsuarioPorEncuesta usuarioExcel = new UsuarioPorEncuesta();
+        usuarioExcel = userExcel;
+        /*  
+         *  01.Pre-requisito: 
+         *  Debe existir previamente el ROL de SUPERVISOR y/o ENCUESTADOR.
+         */
+        String descripcionRol = userExcel.getTipoRol().toUpperCase();
+        Rol rol = rolDao.findByRolDescripcion(descripcionRol);
+        if ( rol == null ) {
+            mensaje = "No se ha registrado el rol " + descripcionRol;
+            System.out.println("Invalido 1");
+            valido = false;
+        } else {
+            System.out.println("Valido 1");
+        }
+
+        /* 
+         *  02.Pre-requisito (Validación SOLO para roles SUPERVISOR y ENCUESTADOR):
+         *  Debe existir previamente el UBIGEO para ese Departamento, Provincia y Distrito para tipo de rol Supervisor o Encuestador,
+         *  el Administrador no necesita Ubigeo.
+         */
+        if ( "SUPERVISOR".equals(descripcionRol) || "ENCUESTADOR".equals(descripcionRol) ) {
+            String dpto = userExcel.getDepartamento();
+            String prov = userExcel.getProvincia();
+            String dist = userExcel.getDistrito();
+            Ubigeo ubigeo = ubiDao.findByDepProvDist(dpto, prov, dist);
+            if ( ubigeo == null ) {
+                mensaje = "No existe código de ubigeo para el Dpto. " + dpto + ", Prov.  " + prov + " y Dist." + dist + ".";
+                valido = false;
+                System.out.println("Invalido 2");
+            } else {
+                System.out.println("Valido 2");
+            }
+        } else {
+            System.out.println("Valido 2 (ADMINISTRADOR no necesita que se valide este caso)");
+        }
+        String nombrePersona = userExcel.getNombres();
+        String apPaterno = userExcel.getPaterno();
+        String apMaterno = userExcel.getMaterno();
+
+        /*  
+         *  03.Pre-requisito: 
+         *  No debe existir un usuario (Excel) cuyo DNI (Excel)
+         *  ya tenga asignado un usuario en la tabla USUARIO para una determinada encuesta.
+         */
+        String codigoEncuesta = userExcel.getEncuesta();
+        String dni = userExcel.getDni();
+        Usuario user = usupDao.findByDNI(dni, codigoEncuesta);
+        if ( user != null ) {
+            mensaje = "Ya se registró una persona con DNI " + userExcel.getDni() + " para la encuesta " + codigoEncuesta + ".";
+            valido = false;
+            System.out.println("Invalido 3");
+        } else {
+            System.out.println("Valido 3");
+        }
+
+        /*
+         *  04.1.Pre-requisito (Validacion SOLO para usuarios con roles ENCUESTADOR o SUPERVISOR):
+         *  Antes de registrar a un USUARIO con rol "ENCUESTADOR", 
+         *  debe haberse listado previamente al usuario con rol "SUPERVISOR"
+         *  que estará a cargo del GRUPO (Excel) al que pertenece el USUARIO
+         *  para una determinada encuesta (previamente seleccionada).
+         */
+        String rolExcel = userExcel.getTipoRol();
+        
+        if ( "ENCUESTADOR".equals(rolExcel) ) {
+            
+            int numeroGrupo = Integer.parseInt(userExcel.getGrupo());
+            System.out.println("numeroGrupo:" + numeroGrupo);
+            System.out.println("codigoEncuesta:" + codigoEncuesta);
+            Usuario usuSupervisor = usupDao.findByUsuarioSupervisor(numeroGrupo, codigoEncuesta);
+            System.out.println("usuSupervisor:" + usuSupervisor);
+
+            if ( usuSupervisor == null ) {
+                mensaje = "Antes de registrar al Encuestador, se debe registrar al Supervisor del mismo grupo.";
+                valido = false;
+                System.out.println("Invalido 4.1");
+                
+            } else {
+                System.out.println("Valido 4.1");
+            }
+            
+        }
+
+        /*
+         *  04.2.Pre-requisito:
+         *  No se puede registrar más de 1 supervisor por grupo para una encuesta.
+         */
+        else if ( "SUPERVISOR".equals(rolExcel) ) {
+            
+            int numeroGrupo = Integer.parseInt(userExcel.getGrupo());
+            Usuario usuSupervisor = usupDao.findByUsuarioSupervisor(numeroGrupo, codigoEncuesta);
+            
+            if ( usuSupervisor != null ) { // Ya existe supervisor
+                mensaje = "Ya existe supervisor para el grupo " + numeroGrupo + " y encuesta " + codigoEncuesta + ".";
+                valido = false;
+                System.out.println("Invalido 4.2");
+            } else {
+                System.out.println("Valido 4.2");
+            }
+        } else {
+            System.out.println("Valido 4.1 y 4.2 (ADMINISTRADOR no necesita esta validación)");
+        }
+
+        /*
+         *  05.Pre-requisito (Validación SOLO para rol SUPERVISOR):
+         *  No se puede registrar el mismo supervisor (DNI,nombres,apellido paterno y materno)
+         *  para 2 diferentes grupos en la misma encuesta.
+         */
+        if ( "SUPERVISOR".equals(rolExcel) ) {
+            Grupo grupoSupervisor = usupDao.findByUsuarioSupervisor(codigoEncuesta, dni, nombrePersona, apPaterno, apMaterno);
+//            System.out.println("grupoSupervisor:" + grupoSupervisor);
+//            System.out.println("numeroGrupo:" + numeroGrupo);
+
+            if ( grupoSupervisor != null ) {
+
+                int numeroGrupo = Integer.parseInt(userExcel.getGrupo());
+
+                if ( numeroGrupo != grupoSupervisor.getGruNumero() ) {
+                    mensaje = "El supervisor ya tiene asignado un grupo para la encuesta " + codigoEncuesta + ".";
+                    valido = false;
+                    System.out.println("Invalido 5");
+                }
+                
+            } else {
+                System.out.println("Valido 5");
+            }
+            
+        } else {
+            System.out.println("Valido 5 (El ADMINISTRADOR o ENCUESTADOR no necesitan esta validacion).");
+        }
+
+        /*
+         *  06.Pre-requisito:
+         *  No se puede registrar a la misma persona (DNI,nombres,apellido paterno y materno)
+         *  con 2 diferentes roles (ENCUESTADOR, SUPERVISOR) para una misma encuesta.
+         */
+        System.out.println("codigoEncuesta:" + codigoEncuesta);
+        System.out.println("dni:" + dni);
+        System.out.println("nombrePersona:" + nombrePersona);
+        System.out.println("apPaterno:" + apPaterno);
+        System.out.println("apMaterno:" + apMaterno);
+        Rol rolUsuario = usupDao.findByUsuario(codigoEncuesta, dni, nombrePersona, apPaterno, apMaterno);
+//        System.out.println("rolUsuario:" + rolUsuario);
+        if ( rolUsuario != null ) {
+            if ( !descripcionRol.equals(rolUsuario) ) {
+                mensaje = "El usuario " + usuarioExcel.getUsuario() + " ya fue asignado como " + rolUsuario.getRolDescripcion() + ". ";
+                valido = false;
+                System.out.println("Invalido 6");
+            }
+        } else {
+            System.out.println("Valido 6");
+        }
+
+        /*
+         *  07.Pre-requisito:
+         *  Formato de contraseña (del Excel) incorrecto, la contraseña debe tener el siguiente formato:
+         *  [1ºletra_apPaterno][1ºletra_apMaterno][1ºletra_nombre][dni]
+         */
+        String claveUsuario = userExcel.getClave();
+//        System.out.println("paterno:" + userExcel.getPaterno());
+//        System.out.println("materno:" + userExcel.getMaterno());
+//        System.out.println("nombres:" + userExcel.getNombres());
+
+        char letraPaterno = userExcel.getPaterno().toLowerCase().charAt(0);
+        char letraMaterno = userExcel.getMaterno().toLowerCase().charAt(0);
+        char letraNombre = userExcel.getNombres().toLowerCase().charAt(0);
+        String claveReconstruida = letraPaterno + "" + letraMaterno + "" + letraNombre + userExcel.getDni();
+        
+        System.out.println("claveUsuario:" + claveUsuario);
+        System.out.println("claveReconstruida:" + claveReconstruida);
+
+        if ( !claveUsuario.equals(claveReconstruida) ) {
+            mensaje = "La clave de la persona " + userExcel.getUsuario() + " no sigue el formato establecido.";
+            valido = false;
+            System.out.println("Invalido 7");
+            
+        } else {
+            System.out.println("Valido 7");
+        }
+
+        if ( valido ) {
+            usuarioExcel.setValido(true);
+            usuarioExcel.setMensajeFilaNoValida(""); // Fila es valida, no necesita mensaje de error esta fila.
+            return usuarioExcel;
+
+        } else {
+            usuarioExcel.setValido(false);
+            usuarioExcel.setMensajeFilaNoValida(mensaje);
+            return usuarioExcel;
+        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Result<List<UsuarioPorEncuesta>> guardar(List<UsuarioPorEncuesta> usuarios) {
+
+        List<UsuarioPorEncuesta> usuariosRegistrados = new ArrayList<UsuarioPorEncuesta>();
+        int idUsuarioSupervisor = 0;
+        String codigoEncuesta = "";
+        Grupo grupo = null;
+        int filaExcel = 0;
+        String mensajesTotal = "";
+        
+        try {
+            for ( UsuarioPorEncuesta usuXEnc : usuarios ) {
+                
+                System.out.println("Nº fila Excel:" + (filaExcel + 1));
+                UsuarioPorEncuesta userPorEnc = validarUsuario(usuXEnc);
+                System.out.println("es valido:" + userPorEnc.isValido());
+                
+                if ( userPorEnc.isValido() ) {
+                    //COMENTADO: Equipo(Dispositivo)
+                    Ubigeo ubigeo = ubiDao.findByDepProvDist(usuXEnc.getDepartamento(), usuXEnc.getProvincia(), usuXEnc.getDistrito());
+
+                    String numDocumento = usuXEnc.getDni();
+                    Persona persona = perDao.findByPerNumDocumento(numDocumento);
+                    if ( persona == null ) {
+                        persona = new Persona();
+                        persona.setPerNombres(usuXEnc.getNombres());
+                        persona.setPerapPaterno(usuXEnc.getPaterno());
+                        persona.setPerapMaterno(usuXEnc.getMaterno());
+
+                        TipoDocumento tipoDocumento = tipDocDao.findByTipDocumentoNombre(DNI);
+                        persona.setTipId(tipoDocumento);
+                        persona.setPerNumDocumento(numDocumento);
+                        perDao.guardar(persona);
+                        System.out.println("guardo PERSONA...");
+                    } else {
+                        System.out.println("persona distinto de null, no se necesita guardar persona, ya existe en BD.");
+                    }
+
+                    String descripcionRol = usuXEnc.getTipoRol().toUpperCase();
+                    Rol rol = rolDao.findByRolDescripcion(descripcionRol);
+
+                    String nombreUsuario = usuXEnc.getUsuario();
+                    Usuario usuario = usuDao.findByUsername(nombreUsuario);
+
+                    if ( usuario == null ) {
+                        usuario = new Usuario();
+                        usuario.setUsuUsuario(nombreUsuario);
+                        Criptografo seguridad = new Criptografo();
+                        String claveEncriptada = seguridad.encripta(usuXEnc.getClave());
+                        usuario.setUsuClave(claveEncriptada);
+                        usuario.setRolId(rol);
+                        usuDao.guardar(usuario);
+                        System.out.println("guardo USUARIO...");
+
+                        int idUsuario = usuDao.findByUsername(nombreUsuario).getUsuId();
+                        usuario.setUsuId(idUsuario);
+                    } else {
+                        System.out.println("usuario está registrado en BD.");
+                    }
+
+                    codigoEncuesta = usuXEnc.getEncuesta();
+                    System.out.println("codigoEncuesta:::" + codigoEncuesta);
+
+                    /*  Si el usuario a registrar es SUPERVISOR (1º del grupo),
+                     *  se crea un nuevo grupo (grupo para usuarios ENCUESTADORES a importar)
+                     */
+                    System.out.println("tipoRol:" + usuXEnc.getTipoRol());
+                    System.out.println("numeroGrupo:" + usuXEnc.getGrupo());
+                    
+                    if ( !"ADMINISTRADOR".equals(usuXEnc.getTipoRol()) ) {
+                        
+                        int numeroGrupo = Integer.parseInt(usuXEnc.getGrupo());
+                        idUsuarioSupervisor = usuario.getUsuId();
+                        Usuario userSupervisor = usupDao.findByUsuarioSupervisor(numeroGrupo, codigoEncuesta);
+                        grupo = grupoDao.findByGrupoSup(userSupervisor);
+
+                        if ( grupo == null && ("ENCUESTADOR".equals(descripcionRol) || "SUPERVISOR".equals(descripcionRol) ) ) {
+                            grupo = new Grupo();
+                            Usuario usuarioSupervisor = usuDao.findByUserId(idUsuarioSupervisor);
+                            grupo.setUsuIdSupervisor(usuarioSupervisor);
+                            grupo.setGruNumero(numeroGrupo);
+                            grupoDao.guardar(grupo);
+                            System.out.println("guardo GRUPO...");
+                        }
+                    }
+                    CaratulaEncuesta parametro = carEncDao.findByCodigo(codigoEncuesta);
+                    UsuarioPersona usuPer = new UsuarioPersona();
+                    usuPer.setPerId(persona);
+                    usuPer.setUsuId(usuario);
+                    usuPer.setGruId(grupo);
+                    usuPer.setDisId(null);
+                    usuPer.setUbiId(ubigeo);
+                    usuPer.setCaeId(parametro);
+                    usuPer.setUspEstado('1');
+                    boolean guardado = usupDao.guardar(usuPer);
+                    System.out.println("guardado:" + guardado);
+                    System.out.println("guardo USUARIO_PERSONA...");
+
+                    // Si todo se registra OK, se añade a lista
+                    usuariosRegistrados.add(usuXEnc);
+                } else {
+                    mensajesTotal = mensajesTotal + (filaExcel + 2) + "º fila: " + userPorEnc.getMensajeFilaNoValida();
+                }
+                filaExcel++;
+            }
+            System.out.println("usuariosRegistrados:" + usuariosRegistrados);
+            System.out.println("nº users registrados:" + usuariosRegistrados.size());
+            
+            /*  Al final después de registrar todos los usuarios del Excel, 
+             *  se debe actualizar el campo "totalEncuestadores" 
+             *  por cada GRUPO del supervisor que se registró para una ENCUESTA determinada.
+             */
+            if ( grupo != null ) {
+                int numeroGrupo = grupo.getGruNumero();
+                int totalEncuestadoresPorGrupo = usupDao.getTotalEncuestadores(numeroGrupo, codigoEncuesta, grupo.getUsuIdSupervisor().getUsuId());
+                grupo.setGruTotEncuestadores(totalEncuestadoresPorGrupo);
+                System.out.println("Actualizar el grupo " + numeroGrupo + " ahora con " + totalEncuestadoresPorGrupo + " encuestadores en total.");
+            }
+            if ( !usuariosRegistrados.isEmpty() ) {
+                System.out.println("OK se registró todos o algunos");
+                System.out.println("Nº registros:" + usuariosRegistrados.size());
+                return ResultFactory.getSuccessResultData(usuariosRegistrados, mensajesTotal);
+//                return ResultFactory.getSuccessResult(usuariosRegistrados);
+            } else {
+                usuariosRegistrados = null;
+                System.out.println("Ninguno se registró");
+                mensajesTotal = "Ningún usuario del Excel se pudo registrar." + mensajesTotal;
+                return ResultFactory.getFailResult(mensajesTotal);
+            }
+                
+        } catch ( Exception ex ) {
+            ex.printStackTrace();
+            System.out.println("Error:" + ex.getMessage());
+            usuariosRegistrados = null;
+            return ResultFactory.getFailResult("Ocurrió un error al registrar usuarios masivamente...");
+        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Result<List<UsuarioPersona>> actualizar(List<UsuarioPersona> usuarios) {
+        
+        try {
+            for ( UsuarioPersona usuPer : usuarios ) {
+                usupDao.actualizar(usuPer);
+            }
+            return ResultFactory.getSuccessResultMsg("Se generaron los rangos de Encuesta para todos los usuarios.");
+            
+        } catch ( Exception ex ) {
+            ex.printStackTrace();
+            System.out.println("Error:" + ex.getMessage());
+            return ResultFactory.getFailResult("Ocurrió un error al registrar usuarios...");
+        }
+    }
+
+    @Override
+    public Result<UsuarioPersona> buscarAdministradorPorEncuesta(CaratulaEncuesta encuesta) {
+        UsuarioPersona usPe = usupDao.findAdministrador(encuesta);
+        if ( usPe == null ) {
+            return ResultFactory.getFailResult("No se encontró Administrador para la Encuesta " + encuesta.getCaeCodigo());
+            
+        } else {
+            return ResultFactory.getSuccessResult(usPe);
+        }
+    }
+    
+    @Override
+    public Result<UsuarioPersona> findByUsuarioPersona(String codigoEncuesta, String usuario) {
+        UsuarioPersona usPe = usupDao.findByUsuPer(codigoEncuesta, usuario);
+        return ResultFactory.getSuccessResult(usPe);
+    }
+    
+    @Override
+        public int validarUsuarioEnEncuesta(String dni, CaratulaEncuesta cae) {
+        return  usupDao.validarUsuarioEnEncuesta(dni, cae);
+    }
+    
+}

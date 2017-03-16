@@ -1,0 +1,20 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Rol;
+import com.fabrica.sisgene.domain.Seccion;
+import java.util.List;
+
+public interface SeccionDao extends GenericDao<Seccion, String> {
+
+    public List<Rol> findAll();
+
+    public Rol findByRolId(int idRol);
+    
+    public Seccion findlast();
+    
+    public List<Seccion> listarPorEncuesta(CaratulaEncuesta car);
+    
+    public Seccion encontrarPorEncuesta(CaratulaEncuesta car, int numSeccion);
+
+}

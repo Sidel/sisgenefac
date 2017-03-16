@@ -1,0 +1,269 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.domain.Rol;
+import com.fabrica.sisgene.domain.Usuario;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import com.fabrica.sisgene.util.Criptografo;
+import java.util.List;
+import javax.persistence.Query;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("userEnDao")
+@Transactional
+public class UsuarioPersonaDaoImpl extends GenericDaoImpl<UsuarioPersona, String> implements UsuarioPersonaDao {
+
+    public UsuarioPersonaDaoImpl() {
+        super(UsuarioPersona.class);
+    }
+
+    @Override
+    public List<UsuarioPersona> findAll() {
+        return em.createNamedQuery("UsuarioPersona.findAll")
+                .getResultList();
+    }
+
+    @Override
+    public boolean guardar(UsuarioPersona susp) {
+        try {
+            em.persist(susp);
+            em.flush();
+            return true;
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean actualizar(UsuarioPersona usup) {
+        try {
+             int numUsPeActualizados = em.createQuery(
+                  " UPDATE UsuarioPersona "
+                + " SET uspdesdenumEnc = :uspdesdenumEnc, "
+                + " usphastanumEnc = :usphastanumEnc"
+                + " WHERE usuId.usuId = " + usup.getUsuId().getUsuId())
+                .setParameter("uspdesdenumEnc", usup.getUspdesdenumEnc())
+                .setParameter("usphastanumEnc", usup.getUsphastanumEnc())
+                .executeUpdate();
+             if ( numUsPeActualizados == 1 ) {
+                 return true;
+                 
+             } else {
+                 return false;
+             }
+        } catch ( Exception e ) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public UsuarioPersona findByUsuId(Usuario usu) {
+        List<UsuarioPersona> result = em.createQuery("select up from UsuarioPersona up where up.usuId=:usuId")
+                .setParameter("usuId", usu)
+                .getResultList();
+        return (result.size() == 1 ? result.get(0) : null);
+    }
+    
+    @Override
+    public UsuarioPersona findByUsuIdEnc(Usuario usu, CaratulaEncuesta car) {
+
+        List<UsuarioPersona> result = em.createQuery("select up from UsuarioPersona up where up.usuId=:usuId and up.caeId=:caeId")
+                .setParameter("usuId", usu)
+                .setParameter("caeId", car)
+                .getResultList();
+        return (result.size() == 1 ? result.get(0) : null);
+    }
+
+    @Override
+    public List<UsuarioPersona> findbyEncuesta(CaratulaEncuesta car) {
+         
+         List<UsuarioPersona> rol = em.createQuery("select up from  UsuarioPersona up where up.caeId=:caeId ")
+//                 + "order by up.gruId")
+                .setParameter("caeId", car)
+                .getResultList();
+
+        return rol;
+        
+    }
+
+    @Override
+    public List<UsuarioPersona> findbyEncuestaGrupo(CaratulaEncuesta car, Grupo grupo) {
+        List<UsuarioPersona> rol = em.createQuery("select up from  UsuarioPersona up where up.caeId=:caeId and up.gruId=:gruId")
+                .setParameter("caeId", car)
+                .setParameter("gruId", grupo)
+                .getResultList();
+        return rol;
+    }
+
+    @Override
+    public UsuarioPersona finByUsernamePassword(String usuUsuario, String usuClave) {
+        UsuarioPersona up = null;
+        List<UsuarioPersona> usPeLista = em.createQuery("select distinct up from UsuarioPersona up, Usuario u "
+                + " where u=up.usuId and u.usuUsuario like '" + usuUsuario + "'")
+                .getResultList();
+        
+        if ( !usPeLista.isEmpty() ) {   
+            up = usPeLista.get(0);
+            Criptografo seguridad = new Criptografo();
+            String claveDesencriptadaBD = seguridad.desencripta(up.getUsuId().getUsuClave());
+            if (usuClave.equals(claveDesencriptadaBD)) {
+                up = usPeLista.get(0);
+
+            } else {
+                up = null;
+            }
+        }
+        return (usPeLista.size() == 1 ? usPeLista.get(0) : null);
+    }
+
+    @Override
+    public Usuario findByDNI(String dni, String codigoEncuesta) {
+        
+        Usuario usuario = null;
+        List<UsuarioPersona> usuariosPersona = em.createQuery(
+                  " select up from  UsuarioPersona up "
+                + " where up.caeId.caeCodigo =:codigoEncuesta "
+                + " and up.perId.perNumDocumento =:dni ")
+                .setParameter("codigoEncuesta", codigoEncuesta)
+                .setParameter("dni", dni)
+                .getResultList();
+        
+        if ( !usuariosPersona.isEmpty() ) {
+            UsuarioPersona usuarioPersona = usuariosPersona.get(0);
+            usuario = usuarioPersona.getUsuId();
+        }
+        return usuario;
+    }
+
+    @Override
+    public Usuario findByUsuarioSupervisor(int numeroGrupo, String codigoEncuesta) {
+        Usuario usuario = null;
+        List<UsuarioPersona> usuariosPersona = em.createQuery(
+                  " select up from UsuarioPersona up "
+                + " where up.caeId.caeCodigo =:codigoEncuesta "
+                + " and up.gruId.gruNumero =:numeroGrupo "
+                + " and up.usuId.rolId.rolDescripcion like 'SUPERVISOR'")
+                .setParameter("codigoEncuesta", codigoEncuesta)
+                .setParameter("numeroGrupo", numeroGrupo)
+                .getResultList();
+        
+        if ( !usuariosPersona.isEmpty() ) {
+            UsuarioPersona usuarioPersona = usuariosPersona.get(0);
+            usuario = usuarioPersona.getUsuId();
+        }
+        return usuario;
+    }
+
+    @Override
+    public int getTotalEncuestadores(int numeroGrupo, String codigoEncuesta, int idUsuarioSupervisor ) {
+        int totalEncuestadores = -1;
+        Query query = em.createQuery(
+                  " select count(up.usuId.usuId) from UsuarioPersona up "
+                + " where up.caeId.caeCodigo =:codigoEncuesta "
+                + " and up.gruId.gruNumero =:numeroGrupo "
+                + " and up.gruId.usuIdSupervisor.usuId =:idUsuarioSupervisor "
+                + " and up.usuId.rolId.rolDescripcion like 'ENCUESTADOR'")
+                .setParameter("codigoEncuesta", codigoEncuesta)
+                .setParameter("numeroGrupo", numeroGrupo)
+                .setParameter("idUsuarioSupervisor", idUsuarioSupervisor);
+        
+        Object obj = query.getSingleResult();
+        String valor = obj.toString();
+        totalEncuestadores = Integer.parseInt(String.valueOf(query.getSingleResult()));
+        return totalEncuestadores;
+    }
+
+    @Override
+    public Grupo findByUsuarioSupervisor(String codigoEncuesta, String dni, String nombrePersona, String apPaterno, String apMaterno) {
+        Grupo grupo = null;
+        String query = " select up from  UsuarioPersona up "
+                + " where up.caeId.caeCodigo = :codigoEncuesta "
+                + " and up.perId.perNumDocumento = :dni "
+                + " and up.perId.perNombres = :nombrePersona "
+                + " and up.perId.perapPaterno = :apPaterno "
+                + " and up.perId.perapMaterno = :apMaterno ";
+        List<UsuarioPersona> usuariosPersona = em.createQuery(query)
+                .setParameter("codigoEncuesta", codigoEncuesta)
+                .setParameter("dni", dni)
+                .setParameter("nombrePersona", nombrePersona)
+                .setParameter("apPaterno", apPaterno)
+                .setParameter("apMaterno", apMaterno)
+                .getResultList();
+        if ( !usuariosPersona.isEmpty() ) {
+            UsuarioPersona usuarioPersona = usuariosPersona.get(0);
+            grupo = usuarioPersona.getGruId();
+        }
+        return grupo;
+    }
+
+    @Override
+    public Rol findByUsuario(String codigoEncuesta, String dni, String nombrePersona, String apPaterno, String apMaterno) {
+        Rol rol = null;
+        List<Rol> roles = em.createQuery(
+                  " select up.usuId.rolId from  UsuarioPersona up "
+                + " where up.caeId.caeCodigo = :codigoEncuesta "
+                + " and up.perId.perNumDocumento = :dni "
+                + " and up.perId.perNombres = :nombrePersona "
+                + " and up.perId.perapPaterno = :apPaterno "
+                + " and up.perId.perapMaterno = :apMaterno ")
+                .setParameter("codigoEncuesta", codigoEncuesta)
+                .setParameter("dni", dni)
+                .setParameter("nombrePersona", nombrePersona)
+                .setParameter("apPaterno", apPaterno)
+                .setParameter("apMaterno", apMaterno)
+                .getResultList();
+        
+        if ( !roles.isEmpty() ) {
+            rol = roles.get(0);
+        }
+        return rol;
+    }
+    
+
+    @Override
+    public UsuarioPersona findAdministrador(CaratulaEncuesta encuesta) {
+        List<UsuarioPersona> result = em.createQuery("select up from UsuarioPersona up, Usuario us, Rol rol where up.usuId= us and us.rolId= rol and UPPER(rol.rolDescripcion)=:admin and up.caeId=:encuesta ")
+                .setParameter("encuesta", encuesta)
+                .setParameter("admin", "ADMINISTRADOR")
+                .getResultList();
+        return (result.size() == 1 ? result.get(0) : null);
+    }
+    
+    @Override
+    public UsuarioPersona findByUsuPer(String codigoEncuesta, String usuario) {
+        UsuarioPersona userPer = null;
+        List<UsuarioPersona> lstUserPer = em.createQuery(
+                  " select up from  UsuarioPersona up "
+                + " where up.caeId.caeCodigo = :codigoEncuesta "
+                + " and up.usuId.usuUsuario = :usuario")
+                .setParameter("codigoEncuesta", codigoEncuesta)
+                .setParameter("usuario", usuario)
+                .getResultList();
+        
+        if ( !lstUserPer.isEmpty() ) {
+            userPer = lstUserPer.get(0);
+        }
+        return userPer;
+    }
+    
+    @Override
+    public int validarUsuarioEnEncuesta(String dni, CaratulaEncuesta cae) {
+        List<UsuarioPersona> lstUserPer = em.createQuery(" select up "
+                + "from  UsuarioPersona up, "
+                + "Persona p "
+                + "where up.perId=p "
+                + "and up.caeId=:cae "
+                + "and p.perNumDocumento= :dni")
+                .setParameter("cae", cae)
+                .setParameter("dni", dni)
+                .getResultList();
+
+        return lstUserPer.size() ;
+    }
+}

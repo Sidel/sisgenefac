@@ -1,0 +1,142 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "pregunta_item")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "PreguntaItem.findAll", query = "SELECT p FROM PreguntaItem p"),
+    @NamedQuery(name = "PreguntaItem.findByPriId", query = "SELECT p FROM PreguntaItem p WHERE p.priId = :priId"),
+    @NamedQuery(name = "PreguntaItem.findByPrinumeralItem", query = "SELECT p FROM PreguntaItem p WHERE p.prinumeralItem = :prinumeralItem"),
+    @NamedQuery(name = "PreguntaItem.findByPriValor", query = "SELECT p FROM PreguntaItem p WHERE p.priValor = :priValor")})
+public class PreguntaItem extends AbstractEntity implements EntityItem<String>{
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "pri_id")
+    private Integer priId;
+    @Column(name = "pri_numeralItem")
+    private Integer prinumeralItem;
+    @Basic(optional = false)
+    @Column(name = "pri_valor")
+    private int priValor;
+    @JoinColumn(name = "ite_id", referencedColumnName = "ite_id")
+    @ManyToOne(optional = false)
+    private Item iteId;
+    @JoinColumn(name = "pre_id", referencedColumnName = "pre_id")
+    @ManyToOne(optional = false)
+    private Pregunta preId;
+
+    public PreguntaItem() {
+    }
+
+    public PreguntaItem(Integer priId) {
+        this.priId = priId;
+    }
+    
+    public PreguntaItem(Integer priId, int priValor) {
+        this.priId = priId;
+        this.priValor = priValor;
+    }
+
+    public Integer getPriId() {
+        return priId;
+    }
+
+    public void setPriId(Integer priId) {
+        this.priId = priId;
+    }
+
+    public Integer getPrinumeralItem() {
+        return prinumeralItem;
+    }
+
+    public void setPrinumeralItem(Integer prinumeralItem) {
+        this.prinumeralItem = prinumeralItem;
+    }
+
+    public Item getIteId() {
+        return iteId;
+    }
+
+    public void setIteId(Item iteId) {
+        this.iteId = iteId;
+    }
+
+    public Pregunta getPreId() {
+        return preId;
+    }
+
+    public void setPreId(Pregunta preId) {
+        this.preId = preId;
+    }
+    
+    public int getPriValor() {
+        return priValor;
+    }
+
+    public void setPriValor(int priValor) {
+        this.priValor = priValor;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (priId != null ? priId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof PreguntaItem)) {
+            return false;
+        }
+        PreguntaItem other = (PreguntaItem) object;
+        if ((this.priId == null && other.priId != null) || (this.priId != null && !this.priId.equals(other.priId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.PreguntaItem[ priId=" + priId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        return getPriId().toString();
+    }
+    
+}

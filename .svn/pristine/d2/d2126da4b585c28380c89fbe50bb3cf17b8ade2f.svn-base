@@ -1,0 +1,18 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Dispositivo;
+import java.util.List;
+
+public interface DispositivoDao extends GenericDao<Dispositivo, String> {
+
+    public List<Dispositivo> findAll();
+
+    public Dispositivo findByDispositivoId(int idDispositivo);
+    
+    public Dispositivo findByDisSerie(String idDispositivo);
+
+    public boolean guardar(Dispositivo disp);
+
+    //public Rol findByRolDescripcion(String desc);
+    public Dispositivo findByDispositivo(String nombre, String marca, String numSerie);
+}

@@ -1,0 +1,151 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.util.List;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "estructura_encuesta")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "EstructuraEncuesta.findAll", query = "SELECT e FROM EstructuraEncuesta e"),
+    @NamedQuery(name = "EstructuraEncuesta.findByEseId", query = "SELECT e FROM EstructuraEncuesta e WHERE e.eseId = :eseId")})
+public class EstructuraEncuesta extends AbstractEntity implements EntityItem<String> {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "ese_id")
+    private Integer eseId;
+//    @JoinColumn(name = "sus_id_nivel2", referencedColumnName = "sus_id")
+//    @ManyToOne
+//    private SubSeccion susIdNivel2;
+    @JoinColumn(name = "pre_id", referencedColumnName = "pre_id")
+    @ManyToOne(optional = false)
+    private Pregunta preId;
+    @JoinColumn(name = "sus_id_nivel1", referencedColumnName = "sus_id")
+    @ManyToOne
+    private SubSeccion susIdNivel1;
+    @JoinColumn(name = "sec_id", referencedColumnName = "sec_id")
+    @ManyToOne(optional = false)
+    private Seccion secId;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "eseId")
+    private List<DetEncuesta> detEncuestaList;
+
+    public EstructuraEncuesta() {
+    }
+
+    public EstructuraEncuesta(Integer eseId) {
+        this.eseId = eseId;
+    }
+
+    public Integer getEseId() {
+        return eseId;
+    }
+
+    public void setEseId(Integer eseId) {
+        this.eseId = eseId;
+    }
+
+//    public SubSeccion getSusIdNivel2() {
+//        return susIdNivel2;
+//    }
+//
+//    public void setSusIdNivel2(SubSeccion susIdNivel2) {
+//        this.susIdNivel2 = susIdNivel2;
+//    }
+
+    public Pregunta getPreId() {
+        return preId;
+    }
+
+    public void setPreId(Pregunta preId) {
+        this.preId = preId;
+    }
+
+    public SubSeccion getSusIdNivel1() {
+        return susIdNivel1;
+    }
+
+    public void setSusIdNivel1(SubSeccion susIdNivel1) {
+        this.susIdNivel1 = susIdNivel1;
+    }
+
+    public Seccion getSecId() {
+        return secId;
+    }
+
+    public void setSecId(Seccion secId) {
+        this.secId = secId;
+    }
+
+    @XmlTransient
+    public List<DetEncuesta> getDetEncuestaList() {
+        return detEncuestaList;
+    }
+
+    public void setDetEncuestaList(List<DetEncuesta> detEncuestaList) {
+        this.detEncuestaList = detEncuestaList;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (eseId != null ? eseId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof EstructuraEncuesta)) {
+            return false;
+        }
+        EstructuraEncuesta other = (EstructuraEncuesta) object;
+        if ((this.eseId == null && other.eseId != null) || (this.eseId != null && !this.eseId.equals(other.eseId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.EstructuraEncuesta[ eseId=" + eseId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        return getEseId().toString();
+    }
+    
+}

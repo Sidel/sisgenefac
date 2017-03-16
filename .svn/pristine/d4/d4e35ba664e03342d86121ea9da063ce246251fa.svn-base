@@ -1,0 +1,41 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.DetEncRptaDao;
+import com.fabrica.sisgene.domain.DetEncRpta;
+import com.fabrica.sisgene.domain.DetalleRespuesta;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+@Transactional
+@Service("detEncRptaService")
+public class DetEncRptaServiceImpl extends AbstractService implements DetEncRptaService {
+
+    @Autowired
+    protected DetEncRptaDao detalleRptaDao;
+            
+//    @Override
+//    public Result<List<DetalleRespuesta>> listarRespuestas(String codigoEncuesta, int caratulaEncRptaId) {
+//        
+//        List<DetalleRespuesta> respuestas = detalleRptaDao.encontrarDetalleRptas(codigoEncuesta, caratulaEncRptaId);
+//        
+//        if ( respuestas.isEmpty() ) {
+//            return ResultFactory.getNotFoundResult();
+//            
+//        } else {
+//            return ResultFactory.getSuccessResult(respuestas);
+//        }
+//    }
+
+    @Override
+    public DetEncRpta getDetalleRespuesta(int idCabEncRpta, int idPregunta) {
+        return detalleRptaDao.getDetalleRespuesta(idCabEncRpta, idPregunta);
+    }
+}

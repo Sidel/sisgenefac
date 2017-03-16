@@ -1,0 +1,18 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface ZonificacionService {
+
+//    public Result<Rol> guardar(String codigo,String nombre);
+    public Result<List<String>> findDepartamentos();
+    public Result<List<String>> findProvinciasPorDep(String departamento);
+
+    public Result<List<String>> findDistritoPorProv(String departamento, String provincia);
+    
+}

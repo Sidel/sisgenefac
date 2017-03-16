@@ -1,0 +1,69 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Rol;
+import com.fabrica.sisgene.domain.Seccion;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("seccionDao")
+@Transactional
+public class SeccionlDaoImpl extends GenericDaoImpl<Seccion, String> implements SeccionDao {
+
+    public SeccionlDaoImpl() {
+        super(Seccion.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Rol> findAll() {
+        return em.createNamedQuery("Rol.findAll")
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Rol findByRolId(int id) {
+
+        List<Rol> rol = em.createNamedQuery("Rol.findByRolId")
+                .setParameter("rolId", id)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    public Seccion findlast() {
+
+        List<Seccion> sec = em.createQuery("select sec from Seccion sec where sec.secId=( select max(s.secId) from Seccion s)")
+                .getResultList();
+
+//        return (Integer)entityManager.createQuery("select max(u.id) from User u").getSingleResult();
+        return (sec.size() == 1 ? sec.get(0) : null);
+    }
+
+    @Override
+    public List<Seccion> listarPorEncuesta(CaratulaEncuesta car) {
+        System.out.println("codigo:" + car.getCaeCodigo());
+        List<Seccion> sec = em.createQuery("select sec from Seccion sec where sec.caeId=:caeId")
+                .setParameter("caeId", car.getCaeCodigo())
+                .getResultList();
+
+//        return (Integer)entityManager.createQuery("select max(u.id) from User u").getSingleResult();
+        return sec;
+    }
+
+    @Override
+    public Seccion encontrarPorEncuesta(CaratulaEncuesta car, int numSeccion) {
+        List<Seccion> sec = em.createQuery("select sec from Seccion sec where sec.caeId=:caeId and sec.secNumeroSeccion=:numSeccion")
+                .setParameter("caeId", car.getCaeCodigo())
+                .setParameter("numSeccion", String.valueOf(numSeccion))
+                .getResultList();
+
+//        return (Integer)entityManager.createQuery("select max(u.id) from User u").getSingleResult();
+        return (sec.size() == 1 ? sec.get(0) : null);
+    }
+
+}

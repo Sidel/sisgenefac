@@ -1,0 +1,18 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Seccion;
+import com.fabrica.sisgene.domain.SeccionUtil;
+import com.fabrica.sisgene.domain.SubSeccion;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ */
+public interface SubSeccionService {
+
+    public boolean guardar(String encuesta, List<SeccionUtil> listaSecciones);
+ 
+    public Result<List<SubSeccion>> findByEnc(CaratulaEncuesta car, Seccion secc) ;
+}

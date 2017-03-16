@@ -1,0 +1,24 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CabEncRpta;
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import java.util.List;
+
+public interface CabEncRptaDao extends GenericDao<CabEncRpta, Integer>{
+
+    public List<CabEncRpta> findAll();
+    
+    public int findByCodigo(UsuarioPersona up, CaratulaEncuesta ca);
+    
+    public int findByEncUsPer(UsuarioPersona up, CaratulaEncuesta ec);
+    
+    public int findByEncTot(UsuarioPersona up, CaratulaEncuesta ca);
+    
+    public List<CabEncRpta> findByEnc(CaratulaEncuesta ca);
+    
+    public List<CabEncRpta> findByCabRptas(String codigoEncuesta);
+    
+    public int contarEncuestasPorEstado(int idUsuPer, char estadoCabEncRpta);
+    
+}

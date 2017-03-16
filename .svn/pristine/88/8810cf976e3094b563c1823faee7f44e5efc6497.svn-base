@@ -1,0 +1,85 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.AccesoDao;
+import com.fabrica.sisgene.dao.CabEncRptaDao;
+import com.fabrica.sisgene.dao.FuncionalidadDao;
+import com.fabrica.sisgene.dao.RolDao;
+import com.fabrica.sisgene.domain.CabEncRpta;
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+@Service("cabEncRptaService")
+public class CanEncRptaServiceImpl extends AbstractService implements CabEncRptaService {
+
+    @Autowired
+    protected RolDao rolDao;
+
+    @Autowired
+    protected AccesoDao accDao;
+    
+    @Autowired
+    protected CabEncRptaDao cabEncDao;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+    public CanEncRptaServiceImpl() {
+        super();
+    }
+
+//    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+//    @Override
+//    public Result<List<Rol>> encontrarTodo() {
+//        return ResultFactory.getSuccessResult(rolDao.findAll());
+//    }
+
+    @Override
+    public Result<Integer> findByCodigo(UsuarioPersona up, CaratulaEncuesta ca) {
+//        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return ResultFactory.getSuccessResult(cabEncDao.findByCodigo(up, ca));
+        
+    }
+    
+    
+    @Override
+    public Result<Integer> findByEncUsPer(UsuarioPersona up, CaratulaEncuesta ec){
+        return ResultFactory.getSuccessResult(cabEncDao.findByEncUsPer(up, ec)); 
+    }
+
+    @Override
+    public Result<Integer> findByEncTot(UsuarioPersona up, CaratulaEncuesta ca) {
+        return ResultFactory.getSuccessResult(cabEncDao.findByEncTot(up, ca)); 
+    }
+
+
+    @Override
+    public Result<List<CabEncRpta>> findByEnc(CaratulaEncuesta ca){
+        return ResultFactory.getSuccessResult(cabEncDao.findByEnc(ca));  
+    }    
+
+    @Override
+    public Result<List<CabEncRpta>> findByEncuestas(String codigoEncuesta) {
+        
+        List<CabEncRpta> listaRptas = cabEncDao.findByCabRptas(codigoEncuesta);
+        
+        if ( listaRptas.isEmpty() ) {
+            return ResultFactory.getFailResult("La encuesta con código " + codigoEncuesta + " no tiene preguntas respondidas.");
+            
+        } else {
+            return ResultFactory.getSuccessResult(listaRptas);
+        }
+    }
+    
+    @Override
+    public Result<Integer> contarEncuestasPorEstado(int idUsuPer, char estadoCabEncRpta) {
+        return ResultFactory.getSuccessResult(cabEncDao.contarEncuestasPorEstado(idUsuPer, estadoCabEncRpta));
+    }
+    
+}

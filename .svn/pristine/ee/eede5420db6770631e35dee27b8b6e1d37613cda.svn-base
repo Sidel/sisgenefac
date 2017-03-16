@@ -1,0 +1,46 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.TipoDocumento;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("tipDocDao")
+@Transactional
+public class TipoDocumentoDaoImpl extends GenericDaoImpl<TipoDocumento, String> implements TipoDocumentoDao {
+
+    public TipoDocumentoDaoImpl() {
+        super(TipoDocumento.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<TipoDocumento> findAll() {
+        return em.createNamedQuery("TipoDocumento.findAll")
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public TipoDocumento findByTipDocumentoId(int id) {
+
+        List<TipoDocumento> tipDoc = em.createNamedQuery("TipoDocumento.findByTipId")
+                .setParameter("tipId", id)
+                .getResultList();
+
+        return (tipDoc.size() == 1 ? tipDoc.get(0) : null);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public TipoDocumento findByTipDocumentoNombre(String codigo) {
+
+        List<TipoDocumento> tipDoc = em.createNamedQuery("TipoDocumento.findByTipNombre")
+                .setParameter("tipNombre", codigo)
+                .getResultList();
+
+        return (tipDoc.size() == 1 ? tipDoc.get(0) : null);
+    }
+
+}

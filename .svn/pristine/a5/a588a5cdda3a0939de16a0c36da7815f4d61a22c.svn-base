@@ -1,0 +1,23 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.DetEncuesta;
+import java.util.List;
+
+public interface DetEncuestaDao extends GenericDao<DetEncuesta, String> {
+
+//    public List<DetEncuesta> findAll();
+
+    public List<DetEncuesta> findByEncuesta(CaratulaEncuesta car);
+    
+    public DetEncuesta findByEncuesta(String enc, int idPreg);
+    
+    public boolean validarNumeroPregunta( String codigoEncuesta, String numeroSeccion, String numeroPregunta );
+    
+    public int getUltimoNumeroPregunta(String codigoEncuesta, String numeroSeccion);
+    
+    public List<Object[]> findByDetalleEncPorHogar(CaratulaEncuesta car);
+    
+    public List<Object[]> findByDetalleEncPorPersonas(CaratulaEncuesta car);
+
+}

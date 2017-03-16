@@ -1,0 +1,29 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.domain.Rol;
+import com.fabrica.sisgene.domain.Usuario;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import java.util.List;
+
+public interface UsuarioPersonaDao extends GenericDao<UsuarioPersona, String> {
+
+    public List<UsuarioPersona> findAll();
+    public List<UsuarioPersona> findbyEncuesta(CaratulaEncuesta car);
+    public boolean guardar(UsuarioPersona usup);
+    public UsuarioPersona findByUsuId(Usuario usu);
+    public UsuarioPersona findAdministrador(CaratulaEncuesta encuesta);
+    public UsuarioPersona findByUsuIdEnc(Usuario usu, CaratulaEncuesta car);
+    public List<UsuarioPersona> findbyEncuestaGrupo(CaratulaEncuesta car, Grupo grupo);
+    public UsuarioPersona finByUsernamePassword(String usuario, String clave);
+    public Usuario findByDNI(String dni, String codigoEncuesta);
+    public Usuario findByUsuarioSupervisor(int numeroGrupo, String codigoEncuesta);
+    public int getTotalEncuestadores(int numeroGrupo, String codigoEncuesta, int idUsuarioSupervisor);
+    public Grupo findByUsuarioSupervisor(String codigoEncuesta, String dni, String nombrePersona, String apPaterno, String apMaterno);
+    public Rol findByUsuario(String codigoEncuesta, String dni, String nombrePersona, String apPaterno, String apMaterno);
+    public UsuarioPersona findByUsuPer(String codigoEncuesta, String usuario);
+    public int validarUsuarioEnEncuesta(String dni, CaratulaEncuesta cae);
+    public boolean actualizar(UsuarioPersona usup);
+//    public boolean guardarPersistente(UsuarioPersona susp);
+}

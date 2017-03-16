@@ -1,0 +1,19 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.Catalogo;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ * @author 
+ */
+public interface CatalogoService {
+
+    public Result<Catalogo> encontrar(int id);
+    public Result<Catalogo> encontrarTipoEquipo(String nombre);
+    public Result<List<Catalogo>> encontrarTodo();
+    public Result<Catalogo> encontrarPorGrupoSubGrupo(int id, int subg);
+    public Result<Catalogo> encontrarPorGrupoSubGrupoCod(int id, String cod);
+    public Result<List<Catalogo>> encontrarPorGrupo(int id);
+}

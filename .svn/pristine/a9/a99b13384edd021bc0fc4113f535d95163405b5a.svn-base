@@ -1,0 +1,138 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.util.List;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "funcionalidad")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "Funcionalidad.findAll", query = "SELECT f FROM Funcionalidad f"),
+    @NamedQuery(name = "Funcionalidad.findByFunId", query = "SELECT f FROM Funcionalidad f WHERE f.funId = :funId"),
+    @NamedQuery(name = "Funcionalidad.findByFunNombre", query = "SELECT f FROM Funcionalidad f WHERE f.funNombre = :funNombre"),
+    @NamedQuery(name = "Funcionalidad.findByFunEstado", query = "SELECT f FROM Funcionalidad f WHERE f.funEstado = :funEstado")})
+public class Funcionalidad extends AbstractEntity implements EntityItem<String> {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "fun_id")
+    private Integer funId;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 100)
+    @Column(name = "fun_nombre")
+    private String funNombre;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "fun_estado")
+    private char funEstado;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "funId")
+    private List<Acceso> accesoList;
+
+    public Funcionalidad() {
+    }
+
+    public Funcionalidad(Integer funId) {
+        this.funId = funId;
+    }
+
+    public Funcionalidad(Integer funId, String funNombre, char funEstado) {
+        this.funId = funId;
+        this.funNombre = funNombre;
+        this.funEstado = funEstado;
+    }
+
+    public Integer getFunId() {
+        return funId;
+    }
+
+    public void setFunId(Integer funId) {
+        this.funId = funId;
+    }
+
+    public String getFunNombre() {
+        return funNombre;
+    }
+
+    public void setFunNombre(String funNombre) {
+        this.funNombre = funNombre;
+    }
+
+    public char getFunEstado() {
+        return funEstado;
+    }
+
+    public void setFunEstado(char funEstado) {
+        this.funEstado = funEstado;
+    }
+
+    @XmlTransient
+    public List<Acceso> getAccesoList() {
+        return accesoList;
+    }
+
+    public void setAccesoList(List<Acceso> accesoList) {
+        this.accesoList = accesoList;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (funId != null ? funId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof Funcionalidad)) {
+            return false;
+        }
+        Funcionalidad other = (Funcionalidad) object;
+        if ((this.funId == null && other.funId != null) || (this.funId != null && !this.funId.equals(other.funId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.Funcionalidad[ funId=" + funId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+}

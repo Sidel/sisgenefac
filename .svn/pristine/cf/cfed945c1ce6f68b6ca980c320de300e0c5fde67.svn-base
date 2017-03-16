@@ -1,0 +1,38 @@
+package com.fabrica.sisgene.service;
+
+import java.util.List;
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.vo.Result;
+
+public interface CaratulaEncuestaService {
+
+    public Result<CaratulaEncuesta> store(
+            String codigo,
+            String descripcion,
+            int numeroEncuestas,
+            String desde,
+            String hasta,
+            String estado,
+            String equipo);
+
+    public Result<CaratulaEncuesta> update(
+            int caeId,
+            String codigo,
+            String descripcion,
+            int numeroEncuestas,
+            String desde,
+            String hasta,
+            String estado,
+            String equipo);
+
+    public Result<CaratulaEncuesta> remove(int idParametro);
+
+    public Result<CaratulaEncuesta> find(Integer caeId);
+
+    public Result<List<CaratulaEncuesta>> findAll();
+    
+    public Result<List<CaratulaEncuesta>> findNoExpiradas();
+    
+    public Result<CaratulaEncuesta> findByCodigo(String codigo);
+
+}

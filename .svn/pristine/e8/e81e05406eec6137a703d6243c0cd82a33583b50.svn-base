@@ -1,0 +1,322 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.domain.*;
+import com.fabrica.sisgene.service.CaratulaEncuestaService;
+import com.fabrica.sisgene.service.RolService;
+import com.fabrica.sisgene.service.UsuarioPersonaService;
+import com.fabrica.sisgene.service.UsuarioService;
+import com.fabrica.sisgene.util.Criptografo;
+import com.fabrica.sisgene.vo.Result;
+import static com.fabrica.sisgene.web.AbstractHandler.getJsonErrorMsg;
+import static com.fabrica.sisgene.web.AbstractHandler.getJsonSuccessData;
+
+import java.util.List;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping("/usuarios")
+public class UserHandler extends AbstractHandler {
+
+    @Autowired
+    protected UsuarioService userService;
+
+    @Autowired
+    protected UsuarioPersonaService usuPersService;
+
+    @Autowired
+    protected CaratulaEncuestaService carService;
+
+    @Autowired
+    protected RolService rolService;
+
+    @RequestMapping(value = "/{encuesta}", method = RequestMethod.POST, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String store(
+            @RequestBody String jsonData,
+            @PathVariable(value = "encuesta") String encuesta,
+            HttpServletRequest request) {
+
+        JsonObject jsonObj = parseJsonObject(jsonData);
+
+//        String tipo = jsonObj.getString("tipo");
+        int desde = 0;
+        int hasta = 0;
+
+        try {
+            desde = jsonObj.getJsonObject("encuestas").getInt("desde");
+        } catch (Exception e) {
+            desde = 0;
+        }
+
+        try {
+            hasta = jsonObj.getJsonObject("encuestas").getInt("hasta");
+        } catch (Exception e) {
+            hasta = 0;
+        }
+        int grupo = 0;
+        try {
+            grupo = jsonObj.getInt("grupo");
+        } catch (Exception e) {
+            grupo = 0;
+        }
+        String tipoEq;
+        try {
+            tipoEq = jsonObj.getJsonObject("equipo").getString("tipo");
+        } catch (Exception e) {
+            tipoEq = "";
+        }
+
+        String marca;
+        try {
+            marca = jsonObj.getJsonObject("equipo").getString("marca");
+        } catch (Exception e) {
+            marca = "";
+        }
+
+        String serie;
+        try {
+            serie = jsonObj.getJsonObject("equipo").getString("serie");
+        } catch (Exception e) {
+            serie = "";
+        }
+
+        try {
+            Result<Usuario> ar = userService.store(
+                    encuesta,
+                    jsonObj.getString("clave"),
+                    jsonObj.getString("dni"),
+                    jsonObj.getJsonObject("apellidos").getString("paterno"),
+                    jsonObj.getJsonObject("apellidos").getString("materno"),
+                    jsonObj.getString("nombres"),
+                    jsonObj.getString("tipo"),
+                    grupo,
+                    //                    tipo.toUpperCase().equals("ENCUESTADOR") ? jsonObj.getJsonObject("encuestas").getInt("desde") : 0,
+                    //                    tipo.toUpperCase().equals("ENCUESTADOR") ? jsonObj.getJsonObject("encuestas").getInt("hasta") : 0,
+                    desde,
+                    hasta,
+                    jsonObj.getJsonObject("zonificacion").getString("departamento"),
+                    jsonObj.getJsonObject("zonificacion").getString("provincia"),
+                    jsonObj.getJsonObject("zonificacion").getString("distrito"),
+                    tipoEq,
+                    marca,
+                    serie);
+
+            if (ar.isSuccess()) {
+
+                return getJsonSuccessData(ar.getData());
+
+            } else {
+
+                return getJsonErrorMsg(ar.getMsg());
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return getJsonErrorMsg("Error. No se agrego usuario de encuesta. "+ e);
+        }
+
+    }
+
+    @RequestMapping(value = "/{encuesta}/{usuario}", method = RequestMethod.PUT, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String update(
+            @RequestBody String jsonData,
+            @PathVariable(value = "encuesta") String encuesta,
+            @PathVariable(value = "usuario") String usuario,
+            HttpServletRequest request) {
+        JsonObject jsonObj = parseJsonObject(jsonData);
+
+        String tipo = jsonObj.getString("tipo");
+
+        int desde = 0;
+        int hasta = 0;
+
+        try {
+            desde = jsonObj.getJsonObject("encuestas").getInt("desde");
+        } catch (Exception e) {
+            desde = 0;
+        }
+
+        try {
+            hasta = jsonObj.getJsonObject("encuestas").getInt("hasta");
+        } catch (Exception e) {
+            hasta = 0;
+        }
+
+        Result<Usuario> ar = userService.actualizar(
+                encuesta,
+                usuario,
+                jsonObj.getString("dni"),
+                jsonObj.getJsonObject("apellidos").getString("paterno"),
+                jsonObj.getJsonObject("apellidos").getString("materno"),
+                jsonObj.getString("nombres"),
+                jsonObj.getString("tipo"),
+                jsonObj.getInt("grupo"),
+                //tipo.toUpperCase().equals("ENCUESTADOR") ? jsonObj.getJsonObject("encuestas").getInt("desde") : 0,
+                //tipo.toUpperCase().equals("ENCUESTADOR") ? jsonObj.getJsonObject("encuestas").getInt("hasta") : 0,
+                desde,
+                hasta,
+                jsonObj.getJsonObject("zonificacion").getString("departamento"),
+                jsonObj.getJsonObject("zonificacion").getString("provincia"),
+                jsonObj.getJsonObject("zonificacion").getString("distrito"),
+                jsonObj.getJsonObject("equipo").getString("tipo"),
+                jsonObj.getJsonObject("equipo").getString("marca"),
+                jsonObj.getJsonObject("equipo").getString("serie"));
+        if (ar.isSuccess()) {
+            return getJsonSuccessMsg("Usuario de encuesta modificado exitosamente");
+        } else {
+            return getJsonErrorMsg(ar.getMsg());
+        }
+    }
+
+    @RequestMapping(value = "/{idEnc}/{idUser}", method = RequestMethod.DELETE, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String remove(
+            @PathVariable(value = "idUser") String idUser,
+            @PathVariable(value = "idEnc") String idEnc,
+            HttpServletRequest request) {
+
+        try {
+            Result<Usuario> ar = userService.remove(idUser, idEnc);
+
+            if (ar.isSuccess()) {
+
+                return getJsonSuccessMsg(ar.getMsg());
+
+            } else {
+
+                return getJsonErrorMsg(ar.getMsg());
+
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            return getJsonErrorMsg("Error. Usuario de Encuesta no fue eliminado. "+e);
+        }
+
+    }
+
+    @RequestMapping(value = "/{encuesta}", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String findAll(
+            @RequestBody String jsonData,
+            @PathVariable(value = "encuesta") String encuesta,
+            HttpServletRequest request) {
+
+        Criptografo cr = new Criptografo();
+        CaratulaEncuesta car = carService.findByCodigo(encuesta).getData();
+
+        if (car == null) {
+            return getJsonErrorMsg("No se encontro la encuesta de la que se lista los usuarios");
+        } else {
+            Result<List<UsuarioPersona>> ar = usuPersService.findByEncuesta(car);
+
+            if (ar.isSuccess()) {
+                JsonObjectBuilder builder = Json.createObjectBuilder();
+                builder.add("success", true);
+
+                JsonArrayBuilder usuarioArrayBuilder = Json.createArrayBuilder();
+
+                for (UsuarioPersona usuper : ar.getData()) {
+
+                    JsonObjectBuilder apellidosArrayBuilder = Json.createObjectBuilder();
+
+                    apellidosArrayBuilder.add("paterno", usuper.getPerId().getPerapPaterno())
+                            .add("materno", usuper.getPerId().getPerapMaterno());
+
+                    JsonObjectBuilder encuestasArrayBuilder = Json.createObjectBuilder();
+                    encuestasArrayBuilder.add("desde", usuper.getUspdesdenumEnc() == null ? 0 : usuper.getUspdesdenumEnc())
+                            .add("hasta", usuper.getUsphastanumEnc() == null ? 0 : usuper.getUsphastanumEnc());
+
+                    JsonObjectBuilder zonaArrayBuilder = Json.createObjectBuilder();
+
+                    if (usuper.getUbiId() != null) {
+                        zonaArrayBuilder.add("ubigeo", usuper.getUbiId().getUbicodDepartamento() + usuper.getUbiId().getUbicodProvincia() + usuper.getUbiId().getUbicodDistrito())
+                                .add("departamento", usuper.getUbiId().getUbiDepartamento())
+                                .add("provincia", usuper.getUbiId().getUbiProvincia())
+                                .add("distrito", usuper.getUbiId().getUbiDistrito());
+                    }
+
+                    JsonObjectBuilder equipoArrayBuilder = Json.createObjectBuilder();
+                    if (usuper.getDisId() != null) {
+                        System.out.println("" + usuper.getDisId().getDisDescripcion());
+                        equipoArrayBuilder.add("tipo", usuper.getDisId().getDisDescripcion() == null ? "" : usuper.getDisId().getDisDescripcion())
+                                .add("marca", usuper.getDisId().getDisMarca())
+                                .add("serie", usuper.getDisId().getDisSerie());
+
+                    }
+
+                    if (usuper.getUsuId().getRolId().getRolDescripcion().toUpperCase().equals("SUPERVISOR")
+                            || usuper.getUsuId().getRolId().getRolDescripcion().toUpperCase().equals("ADMINISTRADOR")) {
+                        usuarioArrayBuilder.add(
+                                Json.createObjectBuilder()
+                                .add("usuario", usuper.getUsuId().getUsuUsuario())
+                                .add("clave", cr.desencripta(usuper.getUsuId().getUsuClave()))
+                                .add("dni", usuper.getPerId().getPerNumDocumento())
+                                .add("apellidos", apellidosArrayBuilder)
+                                .add("nombres", usuper.getPerId().getPerNombres())
+                                .add("tipo", usuper.getUsuId().getRolId().getRolDescripcion())
+                                .add("grupo", usuper.getGruId() == null ? 0 : usuper.getGruId().getGruNumero())
+                                .add("encuestas", encuestasArrayBuilder)
+                                //.add("correlativo", "")
+                                .add("zonificacion", zonaArrayBuilder)
+                                .add("equipo", equipoArrayBuilder));
+                    } else {
+
+                        JsonObjectBuilder supervisor = Json.createObjectBuilder();
+
+                        if (usuper.getGruId() != null) {
+                            UsuarioPersona usuPSup = usuPersService.findByUsuId(usuper.getGruId().getUsuIdSupervisor()).getData();
+
+                            if (usuPSup != null) {
+                                supervisor.add("usuario", usuper.getGruId().getUsuIdSupervisor() == null ? "" : usuper.getGruId().getUsuIdSupervisor().getUsuUsuario())
+                                        .add("nombreCompleto", usuPSup.getPerId().getPerapPaterno() + " "
+                                                + usuPSup.getPerId().getPerapMaterno() + " "
+                                                + usuPSup.getPerId().getPerNombres());
+                            }
+                        }
+
+                        usuarioArrayBuilder.add(
+                                Json.createObjectBuilder()
+                                .add("usuario", usuper.getUsuId().getUsuUsuario())
+                                .add("clave", cr.desencripta(usuper.getUsuId().getUsuClave()))
+                                .add("supervisor", supervisor)
+                                .add("dni", usuper.getPerId().getPerNumDocumento())
+                                .add("apellidos", apellidosArrayBuilder)
+                                .add("nombres", usuper.getPerId().getPerNombres())
+                                .add("tipo", usuper.getUsuId().getRolId().getRolDescripcion())
+                                .add("grupo", usuper.getGruId() == null ? 0 : usuper.getGruId().getGruNumero())
+                                .add("encuestas", encuestasArrayBuilder)
+                                //.add("correlativo", "1")
+                                .add("zonificacion", zonaArrayBuilder)
+                                .add("equipo", equipoArrayBuilder));
+                    }
+
+//                    } else {
+//                        System.out.println("Usuario sin grupo, data inconsistente");
+//                    }
+                }
+
+                builder.add("usuarios", usuarioArrayBuilder);
+                return toJsonString(builder.build());
+
+            } else {
+
+                return getJsonErrorMsg(ar.getMsg());
+
+            }
+        }
+
+    }
+}

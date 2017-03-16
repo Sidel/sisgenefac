@@ -1,0 +1,20 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.DetEncuesta;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface DetEncuestaService {
+
+    public Result<List<DetEncuesta>> finbyEncuesta(CaratulaEncuesta car);
+
+    public boolean eliminar(String encuesta, int idPreg);
+    
+    public Result<List<Object[]>> findByDetalleEncuesta(CaratulaEncuesta car, int unica_persona, String categoria);
+    
+}

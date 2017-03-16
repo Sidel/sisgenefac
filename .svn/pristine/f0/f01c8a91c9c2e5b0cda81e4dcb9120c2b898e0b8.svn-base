@@ -1,0 +1,21 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.Acceso;
+import com.fabrica.sisgene.domain.Rol;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface AccesoService {
+
+    public Result<Acceso> guardar(String rol,String estado, String funcionalidad);
+    public Result<Acceso> eliminar(int id);
+    public Result<Acceso> encontrar(int id);
+    public Result<List<Acceso>> encontrarPorRol(int idRol);
+    public Result<List<Acceso>> encontrarTodo();
+    public boolean eliminarAccesos(Rol rol);
+    
+}

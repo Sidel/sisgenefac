@@ -1,0 +1,223 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.DetEncuestaDao;
+import com.fabrica.sisgene.dao.EstructuraDao;
+import com.fabrica.sisgene.dao.SeccionDao;
+import com.fabrica.sisgene.dao.SubSeccionDao;
+import com.fabrica.sisgene.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+@Service("seccionService")
+public class SeccionServiceImpl extends AbstractService implements SeccionService {
+
+    @Autowired
+    protected SeccionDao seccDao;
+
+    @Autowired
+    protected SubSeccionDao subSeccDao;
+
+    @Autowired
+    protected CaratulaEncuestaService carServ;
+
+    @Autowired
+    protected DetEncuestaDao detDao;
+
+    @Autowired
+    protected EstructuraDao estDao;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+    public SeccionServiceImpl() {
+        super();
+    }
+
+    @Override
+    public boolean guardar(String encuesta, List<SeccionUtil> listaSecciones) {        
+        System.out.println("entrando a guardar cuest!!!!!!!!!!!!!!!!!!");
+        CaratulaEncuesta car = carServ.findByCodigo(encuesta).getData();
+
+        if (car != null) {
+
+            try {
+
+                for (SeccionUtil secc : listaSecciones) {
+
+                    Seccion seccion = new Seccion(1, secc.getDescripcion(), "0", Integer.toString(secc.getSeccion()), encuesta);
+                    seccDao.persist(seccion);
+                    List<SubseccionUtil> listaSubsecciones = secc.getListaSubs();
+                    
+                    if ( listaSubsecciones != null) {
+                        for ( SubseccionUtil subss : listaSubsecciones ) {
+                            SubSeccion subs = new SubSeccion(5, subss.getDescripcion(), "0", 
+                                    Integer.toString(subss.getSubseccion()), encuesta, Integer.toString(secc.getSeccion()));
+                            subSeccDao.persist(subs);
+                        }
+                    }
+
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+            return true;
+        } else {
+            System.out.println(" no encontro encuestA");
+            return false;
+        }
+
+    }
+
+    @Override
+    public Result<Seccion> modificar(CaratulaEncuesta encuesta, List<SeccionUtil> listaSecciones, List<Seccion> listaSeccionesEnt) {
+
+        if (encuesta != null) {
+
+            try {
+                //SECCIONES
+                //-- Comprobando si se ha eliminado una seccion con preguntas, y si se modificaron las existentes
+                for (Seccion secc : listaSeccionesEnt) {
+                    System.out.println("secciones: " + secc.getSecNumeroSeccion());
+                    boolean encontrado = false;
+                    for (SeccionUtil secUt : listaSecciones) {
+                        System.out.println("secciones: " + String.valueOf(secUt.getSeccion()) + " " + secc.getSecNumeroSeccion());
+                        if (String.valueOf(secUt.getSeccion()).equals(secc.getSecNumeroSeccion())) {
+                            System.out.println("encontroooo ");
+                            encontrado = true;
+                            if (!secc.getSecNombre().equals(secUt.getDescripcion())) {
+                                secc.setSecNombre(secUt.getDescripcion());
+                                seccDao.merge(secc);
+                                System.out.println("mergeee seccion: ");
+                            }
+                            System.out.println("antes de break: ");
+                            break;
+
+                        }
+                        System.out.println("desp de break: 0");
+                    }
+                    System.out.println("desp de break: 1");
+                    if (!encontrado) {
+                        List<EstructuraEncuesta> listaEst = estDao.findByEnc(encuesta, secc);
+
+                        if (listaEst.isEmpty()) {
+                            System.out.println("remove seccion: ");
+                            seccDao.remove(secc);
+                        } else {
+                            return ResultFactory.getFailResult("No es posible eliminar la Seccion " + secc.getSecNumeroSeccion() + ". Esta seccion cuenta con preguntas registradas");
+                        }
+                    }
+                }
+                //-- Comprobando si se ha añadido nuevas secciones.
+                for (SeccionUtil secUt : listaSecciones) {
+                    System.out.println("seccionesUt: " + secUt.getSeccion());
+                    boolean encontrado = false;
+                    for (Seccion secc : listaSeccionesEnt) {
+                        System.out.println("secciones: " + String.valueOf(secUt.getSeccion()) + " " + secc.getSecNumeroSeccion());
+                        if (String.valueOf(secUt.getSeccion()).equals(secc.getSecNumeroSeccion())) {
+                            encontrado = true;
+                            break;
+                        }
+                    }
+                    if (encontrado == false) {
+                        Seccion seccion = new Seccion(1, secUt.getDescripcion(), "0", Integer.toString(secUt.getSeccion()), encuesta.getCaeCodigo());
+                        seccDao.persist(seccion);
+                        System.out.println("persist seccion: ");
+                    }
+                }
+
+                //SUB-SECCIONES
+                for (Seccion secc : listaSeccionesEnt) {
+                    System.out.println("comprobando subsecciones de seccion: " + secc.getSecNumeroSeccion());
+                    List<SubSeccion> listaSubsecciones = subSeccDao.findByEnc(encuesta, secc);
+
+                    List<SubseccionUtil> listaSubseccionesUt = null;
+
+                    for (SeccionUtil secUt : listaSecciones) {
+                        System.out.println("secUt.getSeccion(): " + secUt.getSeccion() + " secc.getSecNumeroSeccion():" + secc.getSecNumeroSeccion());
+                        if (String.valueOf(secUt.getSeccion()).equals(secc.getSecNumeroSeccion())) {
+                            listaSubseccionesUt = secUt.getListaSubs();
+                            if (listaSubseccionesUt != null) {
+                                System.out.println("encontro listaSubseccionesUt: " + (listaSubseccionesUt.size()));
+                            }
+
+                            break;
+                        }
+                    }
+                    //-- Comprobando si se ha eliminado una subseccion con preguntas, y si se modificaron las existentes
+                    for (SubSeccion subss : listaSubsecciones) {
+                        System.out.println("subseccion: " + subss.getSusNumeroSubseccion());
+                        boolean encontrado = false;
+                        if (listaSubseccionesUt != null) {
+
+                            for (SubseccionUtil subbUt : listaSubseccionesUt) {
+                                System.out.println("subsecciones: " + String.valueOf(subbUt.getSubseccion()) + " " + subss.getSusNumeroSubseccion());
+                                if (String.valueOf(subbUt.getSubseccion()).equals(subss.getSusNumeroSubseccion())) {
+                                    encontrado = true;
+                                    if (!secc.getSecNombre().equals(subbUt.getDescripcion())) {
+                                        subss.setSusNombre(subbUt.getDescripcion());
+                                        subSeccDao.merge(subss);
+                                        System.out.println("mergeee subss: ");
+                                    }
+
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!encontrado) {
+                            List<EstructuraEncuesta> listaEst = estDao.findByEncSubss(encuesta, secc, subss);
+
+                            if (listaEst.isEmpty()) {
+                                subSeccDao.remove(subss);
+                                System.out.println("remove subss: ");
+                            } else {
+                                return ResultFactory.getFailResult("No es posible eliminar la SubSeccion " + subss.getSusNumeroSubseccion() + ". Esta subseccion cuenta con preguntas registradas");
+                            }
+                        }
+
+                    }
+
+                    //-- Comprobando si se ha añadido nuevas subsecciones.
+                   
+                    if (listaSubseccionesUt != null) {
+                        for (SubseccionUtil subUt : listaSubseccionesUt) {
+                            boolean encontrado = false;
+                            for (SubSeccion subss : listaSubsecciones) {
+                                if (String.valueOf(subUt.getSubseccion()).equals(subss.getSusNumeroSubseccion())) {
+                                    encontrado = true;
+                                    break;
+                                }
+                            }
+                            if (encontrado == false) {
+                                SubSeccion subs = new SubSeccion(5, secc.getSecNombre(), "0", Integer.toString(subUt.getSubseccion()), encuesta.getCaeCodigo(), secc.getSecNumeroSeccion());
+                                subSeccDao.persist(subs);
+                                System.out.println("persist subss: ");
+                            }
+                        }
+                    }
+
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResultFactory.getFailResult("Error al modificar Seccion");
+            }
+            return ResultFactory.getSuccessResultMsg("Secciones y Subsecciones de Cuestionario modificado con exito");
+        } else {
+            System.out.println(" no encontro encuestA");
+            return ResultFactory.getFailResult("No encontro encuesta");
+        }
+    }
+
+    @Override
+    public Result<List<Seccion>> listarSecciones(CaratulaEncuesta car) {
+        return ResultFactory.getSuccessResult(seccDao.listarPorEncuesta(car));
+    }
+
+}

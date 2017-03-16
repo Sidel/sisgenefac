@@ -1,0 +1,17 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Acceso;
+import com.fabrica.sisgene.domain.Rol;
+import java.util.List;
+
+public interface AccesoDao extends GenericDao<Acceso, String> {
+
+    public List<Acceso> findAll();
+
+    public Acceso findByAccId(int idRol);
+    
+    public boolean eliminarAccesos(Rol rol);
+    
+    public List<Acceso> encontrarPorRol(int idRol);
+
+}

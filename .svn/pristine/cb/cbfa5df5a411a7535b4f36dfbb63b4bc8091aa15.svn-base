@@ -1,0 +1,17 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.Pregunta;
+import com.fabrica.sisgene.domain.PreguntaItem;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface PreguntaItemService {
+
+    public Result<List<PreguntaItem>> finbyEncuesta(Pregunta preg);
+
+    
+}

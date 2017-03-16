@@ -1,0 +1,19 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Catalogo;
+import java.util.List;
+
+public interface CatalogoDao extends GenericDao<Catalogo, String> {
+
+    public List<Catalogo> findAll();
+
+    public Catalogo findByCatalogoId(int idRol);
+    
+    public Catalogo findByEquipoNombre(String equipo);
+
+    public Catalogo findByCatalogoGrupoSubGrupo(int idGrupo, int idSubGrupo);
+    
+    public Catalogo findByCatalogoGrupoSubGrupoCod(int idGrupo, String cod);
+
+    public List<Catalogo>  findByCatalogoGrupo(int idGrupo);
+}

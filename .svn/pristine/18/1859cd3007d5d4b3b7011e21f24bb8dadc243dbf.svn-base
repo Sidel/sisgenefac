@@ -1,0 +1,13 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.TipoDocumento;
+import java.util.List;
+
+public interface TipoDocumentoDao extends GenericDao<TipoDocumento, String> {
+
+    public List<TipoDocumento> findAll();
+
+    public TipoDocumento findByTipDocumentoId(int idRol);
+
+    public TipoDocumento findByTipDocumentoNombre(String nomb);
+}

@@ -1,0 +1,70 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Dispositivo;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("disDao")
+@Transactional
+public class DispositivoDaoImpl extends GenericDaoImpl<Dispositivo, String> implements DispositivoDao {
+
+    public DispositivoDaoImpl() {
+        super(Dispositivo.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Dispositivo> findAll() {
+        return em.createNamedQuery("Dispositivo.findAll")
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Dispositivo findByDispositivoId(int id) {
+
+        List<Dispositivo> dis = em.createNamedQuery("Dispositivo.findByDisId")
+                .setParameter("disId", id)
+                .getResultList();
+
+        return (dis.size() == 1 ? dis.get(0) : null);
+    }
+    
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Dispositivo findByDisSerie(String numSerie){
+        List<Dispositivo> dis = em.createNamedQuery("Dispositivo.findByDisSerie")
+                .setParameter("disSerie", numSerie)
+                .getResultList();
+
+        return (dis.size() == 1 ? dis.get(0) : null);
+    }
+    
+    @Override
+    public boolean guardar(Dispositivo disp){
+       try{
+        em.persist(disp);
+        em.flush();
+        return true;
+        }catch(Exception e){
+            em.getTransaction().rollback();
+            e.printStackTrace();
+            return false;
+        }       
+    }
+    
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Dispositivo findByDispositivo(String nombre, String marca, String numSerie) {
+        List<Dispositivo> dis = em.createNamedQuery("Dispositivo.findByDispositivo")
+                .setParameter("nombre", nombre)
+                .setParameter("marca", marca)
+                .setParameter("disSerie", numSerie)
+                .getResultList();
+
+        return (dis.size() == 1 ? dis.get(0) : null);
+    }
+
+}

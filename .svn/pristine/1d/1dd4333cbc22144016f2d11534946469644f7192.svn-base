@@ -1,0 +1,14 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Acceso;
+import com.fabrica.sisgene.domain.Funcionalidad;
+import java.util.List;
+
+public interface FuncionalidadDao extends GenericDao<Funcionalidad, String> {
+
+    public List<Funcionalidad> findAll();
+
+    public Funcionalidad findByFunId(int idRol);
+ 
+    public Funcionalidad findByFunNombre(String nombre);
+}

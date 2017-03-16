@@ -1,0 +1,40 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.EstructuraEncuesta;
+import com.fabrica.sisgene.domain.Seccion;
+import com.fabrica.sisgene.domain.SubSeccion;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("estructDao")
+@Transactional
+public class EstructuraDaoImpl extends GenericDaoImpl<EstructuraEncuesta, String> implements EstructuraDao {
+
+    public EstructuraDaoImpl() {
+        super(EstructuraEncuesta.class);
+    }
+
+    @Override
+    public List<EstructuraEncuesta> findByEnc(CaratulaEncuesta car, Seccion secc) {
+        List<EstructuraEncuesta> lista = em.createQuery("select est from EstructuraEncuesta est, Seccion sec where est.secId=sec and sec=:secid and sec.caeId=:car ")
+                .setParameter("car", car.getCaeCodigo())
+                .setParameter("secid", secc)
+                .getResultList();
+
+        return lista;
+    }
+
+    @Override
+    public List<EstructuraEncuesta> findByEncSubss(CaratulaEncuesta car, Seccion secc, SubSeccion subSeccion) {
+        List<EstructuraEncuesta> lista = em.createQuery("select est from EstructuraEncuesta est, Seccion sec, SubSeccion sub where est.secId=sec and est.susIdNivel1=sub and sec=:secc and sub=:subSeccion and sec.caeId=:car ")
+                .setParameter("car", car.getCaeCodigo())
+                .setParameter("secc", secc)
+                .setParameter("subSeccion", subSeccion)
+                .getResultList();
+
+        return lista;
+    }
+
+}

@@ -1,0 +1,49 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("companyDao")
+@Transactional
+public class CaratulaEncuestaDaoImpl extends GenericDaoImpl<CaratulaEncuesta, Integer>
+        implements CaratulaEncuestaDao {
+
+    public CaratulaEncuestaDaoImpl() {
+        super(CaratulaEncuesta.class);
+    }
+    
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<CaratulaEncuesta> findAll() {
+        List<CaratulaEncuesta> result = em.createNativeQuery("SELECT c.* FROM Caratula_Encuesta c " +
+                " order by c.cae_finicio desc ").getResultList();
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<CaratulaEncuesta> findNoExpiradas() {
+        List<CaratulaEncuesta> result = em.createNativeQuery("SELECT c.* FROM Caratula_Encuesta c " +
+                " WHERE DATE_FORMAT(NOW(),'%Y-%m-%d') <= DATE_FORMAT(c.cae_ffin, '%Y-%m-%d') " +
+                " order by c.cae_finicio desc ").getResultList();
+        return result;
+    }
+
+    @Override
+    public CaratulaEncuesta findByCodigo(String codigo) {
+        System.out.println("codigo:" + codigo);
+        List<CaratulaEncuesta> result = em.createNamedQuery("CaratulaEncuesta.findByCaeCodigo")
+                .setParameter("caeCodigo", codigo)
+                .getResultList();
+        return (result.size() == 1 ? result.get(0) : null);
+    }
+
+    @Override
+    public List<CaratulaEncuesta> encontrarTodo() {
+        List<CaratulaEncuesta> result = em.createQuery("select ca from CaratulaEncuesta ca").getResultList();
+        return result;
+    }
+}

@@ -1,0 +1,236 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.util.List;
+import javax.ejb.TransactionManagement;
+import javax.ejb.TransactionManagementType;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "usuario_persona")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "UsuarioPersona.findAll", query = "SELECT u FROM UsuarioPersona u"),
+    @NamedQuery(name = "UsuarioPersona.findByUspId", query = "SELECT u FROM UsuarioPersona u WHERE u.uspId = :uspId"),
+    @NamedQuery(name = "UsuarioPersona.findByUsuId", query = "SELECT u FROM UsuarioPersona u WHERE u.usuId = :usuId"),
+    @NamedQuery(name = "UsuarioPersona.findByUspEstado", query = "SELECT u FROM UsuarioPersona u WHERE u.uspEstado = :uspEstado"),
+    @NamedQuery(name = "UsuarioPersona.findByUspdesdenumEnc", query = "SELECT u FROM UsuarioPersona u WHERE u.uspdesdenumEnc = :uspdesdenumEnc"),
+    @NamedQuery(name = "UsuarioPersona.findByUsphastanumEnc", query = "SELECT u FROM UsuarioPersona u WHERE u.usphastanumEnc = :usphastanumEnc"),
+    @NamedQuery(name = "UsuarioPersona.findByUsptotencRealizadas", query = "SELECT u FROM UsuarioPersona u WHERE u.usptotencRealizadas = :usptotencRealizadas"),
+    @NamedQuery(name = "UsuarioPersona.findByUsptotencAsignadas", query = "SELECT u FROM UsuarioPersona u WHERE u.usptotencAsignadas = :usptotencAsignadas")})
+
+//@Transactional(propagation = Propagation.REQUIRED)
+public class UsuarioPersona extends AbstractEntity implements EntityItem<String>, Serializable {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)//    @NotNull
+    @Column(name = "usp_id")
+    private Integer uspId;
+    @Column(name = "usp_estado")
+    private Character uspEstado;
+    @Column(name = "usp_desde_numEnc")
+    private Integer uspdesdenumEnc;
+    @Column(name = "usp_hasta_numEnc")
+    private Integer usphastanumEnc;
+    @Column(name = "usp_tot_encRealizadas")
+    private Integer usptotencRealizadas;
+    @Column(name = "usp_tot_encAsignadas")
+    private Integer usptotencAsignadas;
+    @JoinColumn(name = "usu_id", referencedColumnName = "usu_id")
+    @ManyToOne(optional = false)
+    private Usuario usuId;
+    @JoinColumn(name = "ubi_id", referencedColumnName = "ubi_id")
+    @ManyToOne
+    private Ubigeo ubiId;
+    @JoinColumn(name = "per_id", referencedColumnName = "per_id")
+    @ManyToOne(optional = false)
+    private Persona perId;
+    @JoinColumn(name = "gru_id", referencedColumnName = "gru_id")
+    @ManyToOne
+    private Grupo gruId;
+    @JoinColumn(name = "dis_id", referencedColumnName = "dis_id")
+    @ManyToOne
+    private Dispositivo disId;
+    @JoinColumn(name = "cae_id", referencedColumnName = "cae_id")
+    @ManyToOne(optional = false)
+    private CaratulaEncuesta caeId;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "uspId")
+    private List<CabEncRpta> cabEncRptaList;
+
+    public UsuarioPersona() {
+    }
+
+    public UsuarioPersona(Integer uspId) {
+        this.uspId = uspId;
+    }
+
+    public Integer getUspId() {
+        return uspId;
+    }
+
+    public void setUspId(Integer uspId) {
+        this.uspId = uspId;
+    }
+
+    public Character getUspEstado() {
+        return uspEstado;
+    }
+
+    public void setUspEstado(Character uspEstado) {
+        this.uspEstado = uspEstado;
+    }
+
+    public Integer getUspdesdenumEnc() {
+        return uspdesdenumEnc;
+    }
+
+    public void setUspdesdenumEnc(Integer uspdesdenumEnc) {
+        this.uspdesdenumEnc = uspdesdenumEnc;
+    }
+
+    public Integer getUsphastanumEnc() {
+        return usphastanumEnc;
+    }
+
+    public void setUsphastanumEnc(Integer usphastanumEnc) {
+        this.usphastanumEnc = usphastanumEnc;
+    }
+
+    public Integer getUsptotencRealizadas() {
+        return usptotencRealizadas;
+    }
+
+    public void setUsptotencRealizadas(Integer usptotencRealizadas) {
+        this.usptotencRealizadas = usptotencRealizadas;
+    }
+
+    public Integer getUsptotencAsignadas() {
+        return usptotencAsignadas;
+    }
+
+    public void setUsptotencAsignadas(Integer usptotencAsignadas) {
+        this.usptotencAsignadas = usptotencAsignadas;
+    }
+
+    public Usuario getUsuId() {
+        return usuId;
+    }
+
+    public void setUsuId(Usuario usuId) {
+        this.usuId = usuId;
+    }
+
+    public Ubigeo getUbiId() {
+        return ubiId;
+    }
+
+    public void setUbiId(Ubigeo ubiId) {
+        this.ubiId = ubiId;
+    }
+
+    public Persona getPerId() {
+        return perId;
+    }
+
+    public void setPerId(Persona perId) {
+        this.perId = perId;
+    }
+
+    public Grupo getGruId() {
+        return gruId;
+    }
+
+    public void setGruId(Grupo gruId) {
+        this.gruId = gruId;
+    }
+
+    public Dispositivo getDisId() {
+        return disId;
+    }
+
+    public void setDisId(Dispositivo disId) {
+        this.disId = disId;
+    }
+
+    public CaratulaEncuesta getCaeId() {
+        return caeId;
+    }
+
+    public void setCaeId(CaratulaEncuesta caeId) {
+        this.caeId = caeId;
+    }
+
+    @XmlTransient
+    public List<CabEncRpta> getCabEncRptaList() {
+        return cabEncRptaList;
+    }
+
+    public void setCabEncRptaList(List<CabEncRpta> cabEncRptaList) {
+        this.cabEncRptaList = cabEncRptaList;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (uspId != null ? uspId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof UsuarioPersona)) {
+            return false;
+        }
+        UsuarioPersona other = (UsuarioPersona) object;
+        if ((this.uspId == null && other.uspId != null) || (this.uspId != null && !this.uspId.equals(other.uspId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.UsuarioPersona[ uspId=" + uspId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        return uspId.toString();
+    }
+    
+}

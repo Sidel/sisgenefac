@@ -1,0 +1,26 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Usuario;
+import java.util.List;
+
+public interface UsuarioDao extends GenericDao<Usuario, String> {
+
+    public List<Usuario> findAll();
+    
+    public List<Usuario> findbyEncuesta();
+
+    public Usuario findByUsernamePassword(String username, String password);
+
+    public Usuario findByUsername(String username);
+    
+    public Usuario findByUsernameEnc (String username, CaratulaEncuesta car);
+    
+    public Usuario findByUserId(int id);
+    
+    public boolean guardar(Usuario usuario);
+    
+    // @ Author : Ledis Rivera Changra
+    public Usuario findByIdUsuario(int idUsuario);
+    
+}

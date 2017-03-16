@@ -1,0 +1,46 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Rol;
+import com.fabrica.sisgene.domain.Ubigeo;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("ubiDao")
+@Transactional
+public class UbigeoDaoImpl extends GenericDaoImpl<Ubigeo, String> implements UbigeoDao {
+
+    public UbigeoDaoImpl() {
+        super(Ubigeo.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Ubigeo> findAll() {
+        return em.createNamedQuery("Ubigeo.findAll")
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Ubigeo findByUbigeoId(int id) {
+
+        List<Ubigeo> rol = em.createNamedQuery("Ubigeo.findByUbiId")
+                .setParameter("ubiId", id)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    public Ubigeo findByDepProvDist(String dep, String prov, String dist) {
+        List<Ubigeo> rol = em.createNamedQuery("Ubigeo.findByUbiDepProvDist")
+                .setParameter("ubiDepartamento", dep)
+                .setParameter("ubiProvincia", prov)
+                .setParameter("ubiDistrito", dist)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+}

@@ -1,0 +1,14 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.Allegado;
+import java.util.List;
+
+/**
+ * @author Ledis Rivera Changra
+ * @date 12/03/2016
+ */
+public interface AllegadoService {
+
+    public List<Allegado> obtenerAllegados(int idCabEncRpta);
+    
+}

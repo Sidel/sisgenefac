@@ -1,0 +1,65 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.SeccionDao;
+import com.fabrica.sisgene.dao.SubSeccionDao;
+import com.fabrica.sisgene.domain.*;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+//@Service("parametroService")
+@Service("subseccionService")
+public class SubSeccionServiceImpl extends AbstractService implements SubSeccionService {
+
+    @Autowired
+    protected SeccionDao seccDao;
+
+    @Autowired
+    protected SubSeccionDao subssDao;
+
+    @Autowired
+    protected CaratulaEncuestaService carServ;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+    public SubSeccionServiceImpl() {
+        super();
+    }
+
+    @Override
+    public boolean guardar(String encuesta, List<SeccionUtil> listaSecciones) {
+
+        CaratulaEncuesta car = carServ.findByCodigo(encuesta).getData();
+        return false;
+//        if (car == null) {
+//
+//            for (SeccionUtil secc : listaSecciones) {
+//
+//                Seccion seccion = new Seccion(1, secc.getDescripcion(), null, Integer.toString(secc.getSeccion()),encuesta);
+//
+//                seccDao.persist(seccion);
+//                if (secc.getListaSubs()!=null) {
+//                    for (SubseccionUtil subss: secc.getListaSubs() ) {
+//                        
+//                    }
+//                }
+//
+//            }
+//
+//            return true;
+//        } else {
+//            return false;
+//        }
+    }
+
+    @Override
+    public Result<List<SubSeccion>> findByEnc(CaratulaEncuesta car, Seccion secc) {
+        return ResultFactory.getSuccessResult(subssDao.findByEnc(car, secc));
+    }
+
+}

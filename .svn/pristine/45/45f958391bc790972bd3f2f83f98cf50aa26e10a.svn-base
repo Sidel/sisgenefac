@@ -1,0 +1,652 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.domain.*;
+import com.fabrica.sisgene.service.CabEncRptaService;
+import com.fabrica.sisgene.service.CaratulaEncuestaService;
+import com.fabrica.sisgene.service.CatalogoService;
+import com.fabrica.sisgene.service.GrupoService;
+import com.fabrica.sisgene.service.SeccionService;
+import com.fabrica.sisgene.service.UsuarioPersonaService;
+import com.fabrica.sisgene.service.UsuarioService;
+import com.fabrica.sisgene.vo.Result;
+import static com.fabrica.sisgene.web.SecurityHelper.getSessionUser;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping("/encuestas")
+public class CaratulaEncuestaHandler extends AbstractHandler {
+
+    @Autowired
+    protected CaratulaEncuestaService caratulaEncuestaService;
+
+    @Autowired
+    protected CatalogoService catService;
+
+    @Autowired
+    protected UsuarioPersonaService usuPersService;
+
+    @Autowired
+    protected GrupoService grupoService;
+
+    @Autowired
+    protected UsuarioService usuService;
+
+    @Autowired
+    protected CabEncRptaService cabEncService;
+    
+    @Autowired
+    protected SeccionService seccionService;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+    @RequestMapping(value = "/{idCaratulaEncuesta}", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    public @ResponseBody
+    Object find(
+            @PathVariable(value = "idCaratulaEncuesta") String idCaratulaEncuesta,
+            HttpServletRequest request) {
+
+        Result<CaratulaEncuesta> ar = caratulaEncuestaService.findByCodigo(idCaratulaEncuesta);
+
+        if (ar.isSuccess()) {
+            return getJsonSuccessData(ar.getData());
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.POST, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String store(
+            @RequestBody String jsonData,
+            HttpServletRequest request) {
+
+        System.out.println("" + jsonData);
+        JsonObject jsonObj = parseJsonObject(jsonData);
+
+        String desc = "";
+        try {
+            desc = jsonObj.getString("descripcion");
+        } catch (Exception e) {
+            desc = "";
+        }
+
+        String equipo = "";
+        try {
+            equipo = jsonObj.getString("equipo");
+        } catch (Exception e) {
+            equipo = "";
+        }
+
+        Result<CaratulaEncuesta> ar = caratulaEncuestaService.store(
+                jsonObj.getString("codigo"),
+                desc,
+                jsonObj.getInt("numero"),
+                jsonObj.getString("desde"),
+                jsonObj.getString("hasta"),
+                jsonObj.getString("estado"),
+                equipo);
+
+        if (ar.isSuccess()) {
+
+            return getJsonSuccessData(ar.getData());
+
+        } else {
+
+            return getJsonErrorMsg(ar.getMsg());
+
+        }
+    }
+
+    @RequestMapping(value = "/{idCaratulaEncuesta}", method = RequestMethod.PUT, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String update(
+            @RequestBody String jsonData,
+            @PathVariable(value = "idCaratulaEncuesta") int idCaratulaEncuesta,
+            HttpServletRequest request) {
+        System.out.println("mod encuesta 1");
+        System.out.println("mod encuesta");
+        JsonObject jsonObj = parseJsonObject(jsonData);
+
+        Result<CaratulaEncuesta> ar = caratulaEncuestaService.update(
+                idCaratulaEncuesta,
+                jsonObj.getString("codigo"),
+                jsonObj.getString("descripcion"),
+                jsonObj.getInt("numero"),
+                jsonObj.getString("desde"),
+                jsonObj.getString("hasta"),
+                jsonObj.getString("estado"),
+                jsonObj.getString("equipo"));
+
+        if (ar.isSuccess()) {
+
+            return getJsonSuccessData(ar.getData());
+
+        } else {
+
+            return getJsonErrorMsg(ar.getMsg());
+
+        }
+    }
+
+    @RequestMapping(value = "/{idParametro}", method = RequestMethod.DELETE, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String remove(
+            @PathVariable(value = "idParametro") int idParametro,
+            HttpServletRequest request) {
+        System.out.println(" a eliminar");
+        UsuarioPersona sessionUser = getSessionUser(request);
+
+        Result<CaratulaEncuesta> parametro = caratulaEncuestaService.remove(
+                idParametro);
+
+        if (parametro.isSuccess()) {
+            return getJsonSuccessMsg(parametro.getMsg());
+
+        } else {
+
+            return getJsonErrorMsg(parametro.getMsg());
+
+        }
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String getCompanyTreeJson(
+            @RequestParam(value = "tipo", required = false) String tipo,
+            HttpServletRequest request) {
+        
+        Result<List<Object[]>> encuestas = null;
+        
+        if ( tipo == null ) {
+            encuestas = caratulaEncuestaService.findNoExpiradas();
+            
+        } else {
+            encuestas = caratulaEncuestaService.findAll();
+        }
+        
+        if (encuestas.isSuccess()) {
+
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("success", true);
+            JsonArrayBuilder projectChildrenArrayBuilder = Json.createArrayBuilder();
+            List<Object[]> lista = (List<Object[]>) encuestas.getData();
+            Iterator ite = lista.iterator();
+            
+            while ( ite.hasNext() ) {
+                Object[] obj = (Object[]) ite.next();
+                String estado = "";
+                char estadoCarEnc = String.valueOf(obj[6]).charAt(0);
+                char estadoActInact = String.valueOf(obj[11]).charAt(0);
+                
+                if ( estadoActInact == 'A' ) {
+                    switch ( estadoCarEnc ) {
+                        case 'A':
+                            estado = "Activa";
+                            break;
+    //                    case 'I':
+    //                        estado = "Inactiva";
+    //                        break;
+                        case 'C':
+                            estado = "Concluida";
+                            break;
+                        case 'R':
+                            estado = "Rechazada";
+                            break;
+                    };
+                } else {
+                    estado = "Inactiva";
+                }
+                Catalogo cat;
+                int tipoDispositivo = Integer.parseInt(String.valueOf(obj[7]));
+                
+                try {
+                    cat = catService.encontrarPorGrupoSubGrupo(2, tipoDispositivo).getData();
+                } catch (Exception e) {
+                    System.out.println("excepcion:" + e.getMessage());
+                    cat = null;
+                }
+                int caeId = Integer.parseInt(String.valueOf(obj[0]));
+                String caeCodigo = String.valueOf(obj[1]);
+                String caeDescripcion = String.valueOf(obj[3]);
+                int caeNumeroEncuestasUsu = Integer.parseInt(String.valueOf(obj[8]));
+                Date caeFinicio = (Date) obj[4];
+                Date caeFfin = (Date) obj[5];
+                projectChildrenArrayBuilder.add(
+                        Json.createObjectBuilder()
+                        .add("id", caeId)
+                        .add("codigo", caeCodigo)
+                        .add("descripcion", caeDescripcion)
+                        .add("numero", caeNumeroEncuestasUsu)
+                        .add("desde", caeFinicio == null ? "" : sdf.format(caeFinicio))
+                        .add("hasta", caeFfin == null ? "" : sdf.format(caeFfin))
+                        .add("estado", estado)
+                        .add("equipo", cat == null ? "" : cat.getCatNombre()));
+            }
+            builder.add("encuestas", projectChildrenArrayBuilder);
+            return toJsonString(builder.build());
+
+        } else {
+            return getJsonErrorMsg(encuestas.getMsg());
+        }
+    }
+
+    @RequestMapping(value = "/{idEncuesta}/resultados/resumen", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String getResumen(@RequestBody String jsonData,
+            @PathVariable(value = "idEncuesta") String idEncuesta,
+            @RequestParam(value = "encuestador", required = false) String encuestdr,
+            @RequestParam(value = "supervisor", required = false) String usuarioSup,
+            HttpServletRequest request) {
+
+        CaratulaEncuesta car = caratulaEncuestaService.findByCodigo(idEncuesta).getData();
+        if (encuestdr == null && usuarioSup == null) {
+
+            if (car == null) {
+                return getJsonErrorMsg("No se encontro la encuesta de la que se lista los usuarios");
+            } else {
+
+                Result<List<Grupo>> ar = grupoService.findByCaeUd(car);
+
+                if (ar.isSuccess()) {
+                    JsonObjectBuilder builder = Json.createObjectBuilder();
+                    builder.add("success", true);
+
+                    JsonArrayBuilder grupo = Json.createArrayBuilder();
+
+                    for (Grupo g : ar.getData()) {
+
+                        JsonObjectBuilder supervisor = Json.createObjectBuilder();
+                        JsonObjectBuilder datosSup = Json.createObjectBuilder();
+
+                        UsuarioPersona up = usuPersService.findByUsuId(g.getUsuIdSupervisor()).getData();
+
+                        datosSup.add("usuario", up.getUsuId().getUsuUsuario())
+                                .add("nombreCompleto", up.getPerId().getPerapPaterno()
+                                        + " " + up.getPerId().getPerapMaterno()
+                                        + " " + up.getPerId().getPerNombres());
+
+                        supervisor.add("supervisor", datosSup);
+
+                        Result<List<UsuarioPersona>> usuLP = usuPersService.findByEncuestaGrupo(car, g);
+                        JsonObjectBuilder encuestadores = Json.createObjectBuilder();
+                        JsonArrayBuilder encuestador = Json.createArrayBuilder();
+                        
+                        for (UsuarioPersona usuPer : usuLP.getData()) {
+                            
+                            if (!usuPer.getUsuId().getRolId().getRolDescripcion().toUpperCase().equals("SUPERVISOR")) {
+                                JsonObjectBuilder encuestasRes = Json.createObjectBuilder();
+                                String porcentaje = "0%";
+                                int encCompletas = 0, encIncompletas = 0;
+                                int idUsuarioPersona = usuPer.getUspId();
+                                encCompletas = cabEncService.contarEncuestasPorEstado(idUsuarioPersona, 'C').getData();
+                                encIncompletas = cabEncService.contarEncuestasPorEstado(idUsuarioPersona, 'I').getData();
+                                int numEncPorUsuario = usuPer.getCaeId().getCaeNumeroEncuestasUsu();
+                                
+                                if (encCompletas != 0) {
+                                    int i = (encCompletas * 100 / numEncPorUsuario);
+                                    porcentaje = i + "%";
+                                }
+                                int i = cabEncService.findByEncUsPer(usuPer, car).getData();
+                                int encTransferidas = encCompletas + encIncompletas;
+                                int encPorTransferir = numEncPorUsuario - encTransferidas;
+                                
+                                encuestasRes.add("total", usuPer.getCaeId().getCaeNumeroEncuestasUsu())
+                                        .add("terminadas", encCompletas)
+                                        .add("porcentaje", porcentaje)
+                                        .add("transferidas", encTransferidas)
+                                        .add("porTransferir", encPorTransferir);
+
+                                encuestador.add(
+                                        Json.createObjectBuilder().add("nombreCompleto", usuPer.getPerId().getPerapPaterno() + " "
+                                                + usuPer.getPerId().getPerapMaterno() + " "
+                                                + usuPer.getPerId().getPerNombres() + " ")
+                                        .add("usuario", usuPer.getUsuId().getUsuUsuario())
+                                        .add("encuestas", encuestasRes));
+
+                                encuestadores.add("encuestadores", encuestador);
+
+                            }
+                        }
+                        grupo.add(supervisor);
+                        grupo.add(encuestadores);
+                    }
+                    builder.add("resultados", grupo);
+                    return toJsonString(builder.build());
+                } else {
+                    return getJsonErrorMsg(ar.getMsg());
+                }
+            }
+        } else {
+            if (usuarioSup != null) {
+                if (car == null) {
+                    return getJsonErrorMsg("No se encontro la encuesta de la que se lista los usuarios");
+                } else {
+
+                    Usuario usuSup = usuService.find(usuarioSup).getData();
+
+                    Result<List<Grupo>> ar = grupoService.findByCaeUd(car);
+
+                    if (ar.isSuccess()) {
+                        JsonObjectBuilder builder = Json.createObjectBuilder();
+                        builder.add("success", true);
+
+                        JsonArrayBuilder grupo = Json.createArrayBuilder();
+
+                        for (Grupo g : ar.getData()) {
+
+                            JsonObjectBuilder supervisor = Json.createObjectBuilder();
+
+                            JsonObjectBuilder datosSup = Json.createObjectBuilder();
+
+                            UsuarioPersona up = usuPersService.findByUsuId(g.getUsuIdSupervisor()).getData();
+
+                            if (usuSup.getUsuUsuario().equals(up.getUsuId().getUsuUsuario())) {
+                                datosSup.add("usuario", up.getUsuId().getUsuUsuario())
+                                        .add("nombreCompleto", up.getPerId().getPerapPaterno()
+                                                + " " + up.getPerId().getPerapMaterno()
+                                                + " " + up.getPerId().getPerNombres());
+
+                                supervisor.add("supervisor", datosSup);
+
+                                Result<List<UsuarioPersona>> usuLP = usuPersService.findByEncuestaGrupo(car, g);
+
+                                JsonObjectBuilder encuestadores = Json.createObjectBuilder();
+
+                                JsonArrayBuilder encuestador = Json.createArrayBuilder();
+                                for (UsuarioPersona usuPer : usuLP.getData()) {
+                                    if (!usuPer.getUsuId().getRolId().getRolDescripcion().toUpperCase().equals("SUPERVISOR")) {
+
+                                        JsonObjectBuilder encuestasRes = Json.createObjectBuilder();
+
+                                        String porcentaje = "0%";
+                                        int j = cabEncService.findByCodigo(usuPer, car).getData();
+
+                                        int encReal = 0;
+                                        if (usuPer.getUsptotencRealizadas() != null) {
+                                            encReal = usuPer.getUsptotencRealizadas();
+                                        }
+
+                                        if (encReal != 0) {
+                                            int i = (encReal / usuPer.getCaeId().getCaeNumeroEncuestasUsu());
+                                            porcentaje = i + "%";
+                                        }
+                                        encuestasRes.add("total", usuPer.getCaeId().getCaeNumeroEncuestasUsu())
+                                                .add("terminadas", encReal)
+                                                .add("porcentaje", porcentaje)
+                                                .add("transferidas", j)
+                                                .add("porTransferir", usuPer.getCaeId().getCaeNumeroEncuestasUsu() - j);
+
+                                        encuestador.add(
+                                                Json.createObjectBuilder().add("nombreCompleto", usuPer.getPerId().getPerapPaterno() + " "
+                                                        + usuPer.getPerId().getPerapMaterno() + " "
+                                                        + usuPer.getPerId().getPerNombres() + " ")
+                                                .add("usuario", usuPer.getUsuId().getUsuUsuario())
+                                                .add("encuestas", encuestasRes));
+
+                                        encuestadores.add("encuestadores", encuestador);
+
+                                    }
+                                }
+                                grupo.add(supervisor);
+                                grupo.add(encuestadores);
+                            }
+
+                        }
+                        builder.add("resultados", grupo);
+                        return toJsonString(builder.build());
+                    } else {
+                        return getJsonErrorMsg(ar.getMsg());
+                    }
+                }
+            } else {
+                if (encuestdr != null) {
+                    if (car == null) {
+                        return getJsonErrorMsg("No se encontro la encuesta de la que se lista los usuarios");
+                    } else {
+
+                        Usuario usuEnc = usuService.find(encuestdr).getData();
+
+                        UsuarioPersona usuPersona = usuPersService.findByUsuId(usuEnc).getData();
+
+                        Result<List<Grupo>> ar = grupoService.findByCaeUd(car);
+
+                        if (ar.isSuccess()) {
+                            JsonObjectBuilder builder = Json.createObjectBuilder();
+                            builder.add("success", true);
+
+                            JsonArrayBuilder grupo = Json.createArrayBuilder();
+
+                            for (Grupo g : ar.getData()) {
+
+                                if (usuPersona.getGruId().getGruId() == g.getGruId()) {
+
+                                    JsonObjectBuilder supervisor = Json.createObjectBuilder();
+
+                                    JsonObjectBuilder datosSup = Json.createObjectBuilder();
+
+                                    UsuarioPersona up = usuPersService.findByUsuId(g.getUsuIdSupervisor()).getData();
+
+                                    datosSup.add("usuario", up.getUsuId().getUsuUsuario())
+                                            .add("nombreCompleto", up.getPerId().getPerapPaterno()
+                                                    + " " + up.getPerId().getPerapMaterno()
+                                                    + " " + up.getPerId().getPerNombres());
+
+                                    supervisor.add("supervisor", datosSup);
+
+                                    Result<List<UsuarioPersona>> usuLP = usuPersService.findByEncuestaGrupo(car, g);
+
+                                    JsonObjectBuilder encuestadores = Json.createObjectBuilder();
+
+                                    JsonArrayBuilder encuestador = Json.createArrayBuilder();
+                                    for (UsuarioPersona usuPer : usuLP.getData()) {
+                                        if ((!usuPer.getUsuId().getRolId().getRolDescripcion().toUpperCase().equals("SUPERVISOR"))
+                                                && (usuPer.getUsuId().getUsuUsuario() == usuEnc.getUsuUsuario())) {
+
+                                            JsonObjectBuilder encuestasRes = Json.createObjectBuilder();
+
+                                            String porcentaje = "0%";
+                                            int j = cabEncService.findByCodigo(usuPer, car).getData();
+
+                                            int encReal = 0;
+                                            if (usuPer.getUsptotencRealizadas() != null) {
+                                                encReal = usuPer.getUsptotencRealizadas();
+                                            }
+
+                                            if (encReal != 0) {
+                                                int i = (encReal / usuPer.getCaeId().getCaeNumeroEncuestasUsu());
+                                                porcentaje = i + "%";
+                                            }
+                                            encuestasRes.add("total", usuPer.getCaeId().getCaeNumeroEncuestasUsu())
+                                                    .add("terminadas", encReal)
+                                                    .add("porcentaje", porcentaje)
+                                                    .add("transferidas", j)
+                                                    .add("porTransferir", usuPer.getCaeId().getCaeNumeroEncuestasUsu() - j);
+
+                                            encuestador.add(
+                                                    Json.createObjectBuilder().add("nombreCompleto", usuPer.getPerId().getPerapPaterno() + " "
+                                                            + usuPer.getPerId().getPerapMaterno() + " "
+                                                            + usuPer.getPerId().getPerNombres() + " ")
+                                                    .add("usuario", usuPer.getUsuId().getUsuUsuario())
+                                                    .add("encuestas", encuestasRes));
+
+                                            encuestadores.add("encuestadores", encuestador);
+
+                                        }
+                                    }
+                                    grupo.add(supervisor);
+                                    grupo.add(encuestadores);
+
+                                }
+
+                            }
+                            builder.add("resultados", grupo);
+                            return toJsonString(builder.build());
+                        } else {
+                            return getJsonErrorMsg(ar.getMsg());
+                        }
+                    }
+                } else {
+                    return getJsonErrorMsg("No se encuentran los parametros");
+                }
+
+            }
+
+        }
+
+    }
+
+    @RequestMapping(value = "/{idEncuesta}/resultados", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String getResultados(@RequestBody String jsonData,
+            @PathVariable(value = "idEncuesta") String idEncuesta,
+            HttpServletRequest request) {
+
+        CaratulaEncuesta car = caratulaEncuestaService.findByCodigo(idEncuesta).getData();
+        Result<List<CabEncRpta>> lista = cabEncService.findByEnc(car);
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+        if (car == null) {
+            return getJsonErrorMsg("No se encontro la encuesta con ID " + idEncuesta);
+        } else {
+            if (lista.isSuccess()) {
+
+                JsonObjectBuilder encuestas = Json.createObjectBuilder();
+                JsonArrayBuilder arrayEncuestados = Json.createArrayBuilder();
+
+                for (CabEncRpta cab : lista.getData()) {
+
+                    JsonObjectBuilder encuestador = Json.createObjectBuilder();
+                    JsonObjectBuilder apellidos = Json.createObjectBuilder();
+
+                    apellidos.add("paterno", cab.getUspId().getPerId().getPerapPaterno())
+                            .add("materno", cab.getUspId().getPerId().getPerapMaterno());
+
+                    System.out.println("nombres:" + cab.getUspId().getPerId().getPerNombres());
+                    encuestador.add("usuario", cab.getUspId().getUsuId().getUsuUsuario())
+                            .add("apellidos", apellidos)
+                            .add("nombres", cab.getUspId().getPerId().getPerNombres());
+
+                    JsonObjectBuilder supervisor = Json.createObjectBuilder();
+                    supervisor.add("usuario", cab.getUspId().getGruId().getUsuIdSupervisor().getUsuUsuario());
+
+                    String hours = "";
+                    String hours1 = "";
+                    String time = "";
+                    if (cab.getCaerfhHorainicio() != null) {
+                        Calendar cal = Calendar.getInstance();
+                        cal.setTime(cab.getCaerfhHorainicio());
+                        hours =  String.valueOf(cal.get(Calendar.DATE))+"-" 
+                                +String.valueOf(cal.get(Calendar.MONTH)+1)+"-" 
+                                +String.valueOf(cal.get(Calendar.YEAR))+" "
+                                + String.valueOf(cal.get(Calendar.HOUR_OF_DAY)) 
+                                + ":" + String.valueOf(cal.get(Calendar.MINUTE)) 
+                                + ":"
+                                + String.valueOf(cal.get(Calendar.SECOND));
+                    }
+                    if (cab.getCaerfhHorafin() != null) {
+                        Calendar cal1 = Calendar.getInstance();
+                        cal1.setTime(cab.getCaerfhHorafin());
+                        hours1 = String.valueOf(cal1.get(Calendar.DATE))+"-" 
+                                +String.valueOf(cal1.get(Calendar.MONTH)+1)+"-" 
+                                +String.valueOf(cal1.get(Calendar.YEAR))+" "
+                                +  String.valueOf(cal1.get(Calendar.HOUR_OF_DAY)) 
+                                + ":" + String.valueOf(cal1.get(Calendar.MINUTE)) 
+                                + ":"
+                                + String.valueOf(cal1.get(Calendar.SECOND));
+                    }
+                    
+                     time= cab.getCaerTiempo();
+                     if (time==null){
+                         time="";
+                     }
+
+                    JsonObjectBuilder datosEncuestaReal = Json.createObjectBuilder();
+                    datosEncuestaReal.add("inicio", cab.getCaerfhHorainicio() == null ? "" : hours)//sdf.format(cab.getCaerfhHorainicio()))
+                            .add("fin", cab.getCaerfhHorafin() == null ? "" : hours1)
+                            .add("tiempo", time);
+
+                    String nombreEncuestado = cab.getPerId().getPerapPaterno() + " " + cab.getPerId().getPerapMaterno() + ", "
+                            + cab.getPerId().getPerNombres();
+
+                    String estado = "";
+                    switch (cab.getCaerEstado()) {
+                        case 'P':
+                            estado = "Pendiente";
+                            break;
+                        case 'C':
+                            estado = "Completo";
+                            break;
+                        case 'I':
+                            estado = "Incompleto";
+                            break;
+                        case 'R':
+                            estado = "Rechazado";
+                            break;
+                    }
+
+                    arrayEncuestados.add(Json.createObjectBuilder().add("encuestador", encuestador)
+                            .add("supervisor", supervisor)
+                            .add("encuestado", nombreEncuestado)
+                            .add("numeroEncuesta", cab.getCaerNumeroEncuesta())
+                            .add("fecha", cab.getCaerFencuesta()== null ? "" : sdf.format(cab.getCaerFencuesta()))
+                            .add("hora", datosEncuestaReal)
+                            .add("estado", estado));
+                }
+
+                encuestas.add("success", true).add("resultados", arrayEncuestados);
+
+                return toJsonString(encuestas.build());
+
+            } else {
+                return getJsonErrorMsg("No se pudo generar los resultados de la encuesta con ID " + idEncuesta);
+            }
+
+        }
+    }
+
+    @RequestMapping(value = "/{codigoEncuesta}/categorias", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String listarCategorias(
+           @RequestBody String jsonData,
+           @PathVariable(value = "codigoEncuesta") String codigoEncuesta,
+           HttpServletRequest request) {
+
+        Result<List<Seccion>> secciones = seccionService.getSecciones(codigoEncuesta);
+        
+        if ( secciones.isSuccess() ) {
+            JsonObjectBuilder categorias = Json.createObjectBuilder();
+            JsonArrayBuilder arrayCategorias = Json.createArrayBuilder();
+
+            for (Seccion seccion : secciones.getData()) {
+                String categoria = seccion.getSecCategoria();
+                arrayCategorias.add(Json.createObjectBuilder().add("nombre", categoria));
+            }
+            categorias.add("success", true).add("categorias", arrayCategorias);
+            return toJsonString(categorias.build());
+            
+        } else {
+            return getJsonErrorMsg("La encuesta con código " + codigoEncuesta + " no tiene categorías registradas");
+        }
+    }
+}

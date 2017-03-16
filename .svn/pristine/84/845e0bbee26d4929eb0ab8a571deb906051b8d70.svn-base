@@ -1,0 +1,47 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.AccesoDao;
+import com.fabrica.sisgene.dao.FuncionalidadDao;
+import com.fabrica.sisgene.dao.GrupoDao;
+import com.fabrica.sisgene.dao.RolDao;
+import java.util.List;
+import com.fabrica.sisgene.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import java.text.SimpleDateFormat;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+//@Service("parametroService")
+@Service("grupoService")
+public class GrupoServiceImpl extends AbstractService implements GrupoService {
+
+    @Autowired
+    protected GrupoDao grupoDao;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+    public GrupoServiceImpl() {
+        super();
+    }
+
+    
+    @Override
+    public Result<List<Grupo>> findByCaeUd(CaratulaEncuesta ca) {
+        return ResultFactory.getSuccessResult(grupoDao.findByCaeUd(ca));
+    }
+
+    @Override 
+    public Result<Grupo> findByUsu(String usuario) {
+        return ResultFactory.getSuccessResult(grupoDao.findByUsu(usuario));
+    }
+    
+    @Override
+    public Result<Grupo> buscarSupervisor(CaratulaEncuesta encuesta, int numeroGrupo) {
+        return ResultFactory.getSuccessResult(grupoDao.findByCaeUd(encuesta, numeroGrupo));
+    }
+
+}

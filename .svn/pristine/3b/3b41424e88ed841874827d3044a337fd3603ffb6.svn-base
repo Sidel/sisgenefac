@@ -1,0 +1,305 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import com.fabrica.sisgene.service.CaratulaEncuestaService;
+import com.fabrica.sisgene.service.GrupoService;
+import com.fabrica.sisgene.service.UsuarioPersonaService;
+import org.springframework.stereotype.Controller;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RequestBody;
+import javax.servlet.http.HttpServletRequest;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.UsuarioPorEncuesta;
+import javax.json.JsonObject;
+import org.springframework.web.bind.annotation.PathVariable;
+import static com.fabrica.sisgene.web.AbstractHandler.getJsonErrorMsg;
+import static com.fabrica.sisgene.web.SecurityHelper.getSessionUser;
+import java.util.ArrayList;
+import java.util.List;
+import javax.json.JsonArray;
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+@Controller
+@RequestMapping("/usuarios")
+public class UsuarioPersonaHandler extends AbstractHandler {
+    
+    @Autowired
+    protected UsuarioPersonaService userPersonService;
+    
+    @Autowired
+    protected CaratulaEncuestaService carEncService;
+    
+    @Autowired
+    protected GrupoService gruService;
+    
+    //http://localhost:9002/sisgene/api/usuarios/2015-I/masivo
+    @RequestMapping( value = "/{codigoEncuesta}/masivo", method = RequestMethod.POST, 
+                     produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String masivo( @RequestBody String jsonData, @PathVariable(value = "codigoEncuesta") String codigoEncuesta, HttpServletRequest request ) {
+        
+        UsuarioPersona sesionUser = getSessionUser(request);
+        List<UsuarioPorEncuesta> listaUsers = new ArrayList<UsuarioPorEncuesta>();
+        
+        System.out.println("codigoEncuesta:" + codigoEncuesta);
+        
+        JsonObject jsonObj = parseJsonObject(jsonData);
+        JsonArray jsonArrayUsuarios = jsonObj.getJsonArray("usuarios");
+        
+        String usuario = "", clave = "", dni = "", paterno = "", materno = "", nombres = "", tipoRol = "", grupo = "", departamento = "", provincia = "", distrito = "";
+        
+        for ( Object oUsuario : jsonArrayUsuarios ) {
+        // Construir lista temporal (RAM) proveniente de los usuarios del Json.
+            JsonObject jsonItemUsuario = (JsonObject) oUsuario;
+
+            clave = jsonItemUsuario.getString("clave");
+            dni = jsonItemUsuario.getString("dni");
+            usuario = dni + codigoEncuesta;
+
+            System.out.println("--------------------------------------");
+            System.out.println("clave:" + clave);
+            System.out.println("dni:" + dni);
+            System.out.println("usuario:" + usuario);
+
+            Object apellidos = jsonItemUsuario.getJsonObject("apellidos");
+            JsonObject jsonApellidos = (JsonObject) apellidos;
+            paterno = jsonApellidos.getString("paterno");
+            materno = jsonApellidos.getString("materno");
+
+            System.out.println("paterno:" + paterno);
+            System.out.println("materno:" + materno);
+
+            nombres = jsonItemUsuario.getString("nombres");
+            tipoRol = jsonItemUsuario.getString("tipo").toUpperCase();
+
+            System.out.println("nombres:" + nombres);
+            System.out.println("tipo:" + tipoRol);
+
+            // Solo para roles: Supervisor y Encuestador
+            if ( "ENCUESTADOR".equals(tipoRol) || "SUPERVISOR".equals(tipoRol)) {
+
+                grupo = jsonItemUsuario.getString("grupo");
+                System.out.println("grupo:" + grupo);
+
+                Object zonificacion = jsonItemUsuario.getJsonObject("zonificacion");
+                JsonObject jsonZonificacion = (JsonObject) zonificacion;
+
+                departamento = jsonZonificacion.getString("departamento").toUpperCase();
+                provincia = jsonZonificacion.getString("provincia").toUpperCase();
+                distrito = jsonZonificacion.getString("distrito").toUpperCase();
+
+                System.out.println("departamento:" + departamento);
+                System.out.println("provincia:" + provincia);
+                System.out.println("distrito:" + distrito);
+            }
+            System.out.println("tipoRol:" + tipoRol);
+
+            UsuarioPorEncuesta usuarioPorEncuesta = new UsuarioPorEncuesta(codigoEncuesta, usuario, clave, dni, paterno, materno, nombres, tipoRol, grupo, departamento, provincia, distrito);
+            listaUsers.add(usuarioPorEncuesta);
+        }
+              
+        /*      VALIDACION por orden de jerarquía de ROLES de usuarios (BD o Excel) para 1 encuesta:
+         *
+         *      1º Verificar que encuesta tenga asignado ADMINISTRADOR, 
+         *          1.1 Si ADMINISTRADOR no está asignado a Encuesta en BD, buscarlo en listaUsers.
+         *          1.2 Si ADMINISTRADOR está asignado a Encuesta en BD:
+         *              1.2.1º Verificar que encuesta para "grupo" tenga asignado SUPERVISOR.
+         *                  1.2.1.1 Si SUPERVISOR no está asignado a "grupo" en BD, buscarlo en listaUsers.
+         *                  1.2.1.2 Si SUPERVISOR está asignado a "grupo" en BD.
+         */
+        
+        // I. SE REQUIERE 1 ADMINISTRADOR ASIGNADO A LA ENCUESTA
+        // 1º Verificar que encuesta tenga asignado ADMINISTRADOR.
+        CaratulaEncuesta carEnc = carEncService.findByCodigo(codigoEncuesta).getData();
+        Result<UsuarioPersona> usPe = userPersonService.buscarAdministradorPorEncuesta(carEnc);
+        
+        boolean vPrimeraFilaEsAdministrador = true;
+        boolean vSegundaFilaEsSupervisor = true;
+        boolean vPrimeraFilaEsSupervisor = true;
+        boolean vRolCorrecto = true;
+        boolean vRegistrarUnaVezAdministrador = true;
+        boolean vRegistrarUnaVezSupervisor = true;
+        
+        String grupoSinSupervisor = "", grupoIncorrecto = "";
+        
+        int i = 0;
+        for ( UsuarioPorEncuesta userExcel : listaUsers ) {
+            String rolUserExcel = userExcel.getTipoRol();
+            String numGrupoExcel = userExcel.getGrupo();
+            
+            if ( ! usPe.isSuccess() || !vPrimeraFilaEsAdministrador ) { // 1.1. Si ADMINISTRADOR no está asignado a Encuesta en BD (o Administrador está en 1º fila del Excel).
+                if ( i == 0 ) {
+                    
+                    if ( ! "ADMINISTRADOR".equals(rolUserExcel) ) { // Buscar ADMINISTRADOR en 1º fila del Excel (y no es el rol ADMINISTRADOR).
+                        System.out.println("(UsuarioPersonaHandler) Invalido 1");
+                        vPrimeraFilaEsAdministrador = false;
+                        break;
+                        
+                    } else { // ADMINISTRADOR está en 1º fila del Excel (Excel tiene formato: {ADMINISTRADOR, SUPERVISOR, ENCUESTADOR1, ...}).
+
+                        // II. SE REQUIERE 1 SUPERVISOR ASIGNADO A GRUPO DE ENCUESTA
+                        if ( i == 1 ) { // SUPERVISOR debe estar en 2º fila del Excel para el "grupo".
+                            if ( ! "SUPERVISOR".equals(rolUserExcel) )  {
+                                System.out.println("(UsuarioPersonaHandler) Invalido 2");
+                                vSegundaFilaEsSupervisor = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else { // 1.2 Si ADMINISTRADOR está asignado a Encuesta en BD (Excel tiene formato: {SUPERVISOR, ENCUESTADOR1, ENCUESTADOR2, ...} o {ENCUESTADOR1, ENCUESTADOR2, ...}).
+                
+                // II. SE REQUIERE 1 SUPERVISOR ASIGNADO A GRUPO DE ENCUESTA
+                // 1.2.1º Verificar que encuesta para "grupo" tenga asignado SUPERVISOR
+                if ( ! "ADMINISTRADOR".equals(rolUserExcel) ) { // Para que Excel no contenga denuevo ADMINISTRADOR que ya se tiene en BD para Encuesta.
+                
+                    Result<Grupo> grupoSupervisor = gruService.buscarSupervisor(carEnc, Integer.parseInt(numGrupoExcel));
+                    if ( ! grupoSupervisor.isSuccess() ) { // 1.2.1.1 Si SUPERVISOR no está asignado a "grupo" en BD.
+
+                        if ( i == 0 ) {
+                            if ( ! "SUPERVISOR".equals(rolUserExcel) ) { // Buscar SUPERVISOR en 1º fila del Excel (y no es el SUPERVISOR).
+                                vPrimeraFilaEsSupervisor = false;
+                                System.out.println("(UsuarioPersonaHandler) Invalido 3");
+                                grupoSinSupervisor = numGrupoExcel;
+                                break;
+                            }
+                        }
+
+                    } else { // 1.2.1.2 Si SUPERVISOR está asignado a "grupo" en BD.
+
+                        if ( "SUPERVISOR".equals(rolUserExcel) ) { // El "grupo" tiene asignado SUPERVISOR en BD y el que se lee del Excel es SUPERVISOR también (1 SUPERVISOR por "grupo").
+                            vRegistrarUnaVezSupervisor = false;
+                            System.out.println("(UsuarioPersonaHandler) Invalido 4");
+                            grupoIncorrecto = numGrupoExcel;
+                            break;
+                            
+                        } else {
+                            if ( !"ENCUESTADOR".equals(rolUserExcel) ) { 
+                                // Buscar que rol sea ENCUESTADOR o SUPERVISOR en Excel (Excel tiene formato: {ENC1, ENC2,...} o {SUP1, SUP2,...}).
+                                vRolCorrecto = false;
+                                System.out.println("(UsuarioPersonaHandler) Invalido 5");
+                                grupoIncorrecto = numGrupoExcel;
+                                break;
+                            }
+                        }
+                    }
+                } else { // Si en Excel 1º fila es del ADMINISTRADOR y éste ya existe en BD para esta Encuesta.
+                    vRegistrarUnaVezAdministrador = false;
+                    break;
+                }
+            }
+            i++;
+        }
+        
+        // Mostrar mensajes de invalidación de registro masivo de usuarios.
+        // Fila desde la 2 se empieza a listar usuarios, la fila 1 es el ENCABEZADO DEL EXCEL.
+        if ( ! vPrimeraFilaEsAdministrador ) {
+            return getJsonErrorMsg("La primera fila del Excel debe contener al usuario Administrador.");
+            
+        } else if ( ! vSegundaFilaEsSupervisor ) {
+            return getJsonErrorMsg("La segunda fila del Excel debe contener al usuario Supervisor.");
+            
+        } else if ( ! vPrimeraFilaEsSupervisor ) {
+            return getJsonErrorMsg("La primera fila del Excel debe contener al usuario Supervisor para el grupo " + grupoSinSupervisor);
+            
+        } else if ( ! vRolCorrecto ) {
+            return getJsonErrorMsg("El rol " + tipoRol + " de la fila " + (i+2) + " del Excel no está registrado.");
+          
+        } else if ( ! vRegistrarUnaVezAdministrador ) {
+            return getJsonErrorMsg("Esta encuesta ya tiene un Administrador asignado en la fila " + (i+2) + " del Excel.");
+            
+        } else if ( ! vRegistrarUnaVezSupervisor ) {
+            return getJsonErrorMsg("Esta encuesta ya tiene un Supervisor asignado para el grupo " + grupoIncorrecto + " en la fila " + (i+2) + " del Excel.");
+            
+        } else { // Si el formato de usuarios es CORRECTO, proceder a guardar en BD previa validacion de cada fila del Excel con la BD.
+            System.out.println("REGISTRAR USUARIOS CON FORMATO DE JERARQUÍA CORRECTA...");
+            System.out.println("Nº de usuarios a registrar:" + listaUsers.size());
+            
+            String mensajeRegistroMasivo = "";
+            Result<List<UsuarioPorEncuesta>> rstUsersRegistrados = userPersonService.guardar(listaUsers);
+            
+            if ( rstUsersRegistrados.isSuccess() ) { // Se registraron algunos o todos los usuarios del Excel.
+                List<UsuarioPorEncuesta> lstUsersRegistrados = rstUsersRegistrados.getData(); // Se registraron usuarios.
+                String logMensajes = rstUsersRegistrados.getMsg();
+                System.out.println("lstUsersRegistrados:" + lstUsersRegistrados);
+                System.out.println("logMensajes:" + logMensajes);
+                
+                if ( lstUsersRegistrados != null ) {
+                    System.out.println("Nº de usuarios registrados:" + lstUsersRegistrados.size());
+                }
+                
+                // RESULTADO FINAL DE MENSAJES
+                if ( lstUsersRegistrados != null ) {
+                    if ( lstUsersRegistrados.size() == listaUsers.size() ) { // Se registraron en la BD la misma cantidad de usuarios que provinieron del Excel.
+                        mensajeRegistroMasivo = "Se registraron todos los usuarios del Excel";
+                        return getJsonSuccessMsg(mensajeRegistroMasivo);
+
+                    } else {
+                        if ( lstUsersRegistrados.size() == 1 ) {
+                            mensajeRegistroMasivo = "Se registró " + lstUsersRegistrados.size() + " usuario de los " + listaUsers.size() + " que habían en el Excel."
+                                    + logMensajes;
+                        } else {
+                            mensajeRegistroMasivo = "Se registraron " + lstUsersRegistrados.size() + " usuarios de los " + listaUsers.size() + " que habían en el Excel."
+                                    + logMensajes;
+                        }
+                        return getJsonSuccessMsg(mensajeRegistroMasivo);
+//                        return getJsonSuccessMsg(mensajeRegistroMasivo + logMensajes); // Retornar errores de usuarios no registrados.
+                    }
+                } else {
+                    return getJsonErrorMsg(rstUsersRegistrados.getMsg()); // No todos los usuarios fueron registrados porque no todos eran válidos en BD.
+                }
+            } else {
+                System.out.println("mensajeError:" + rstUsersRegistrados.getMsg());
+                return getJsonErrorMsg(rstUsersRegistrados.getMsg()); // Error en BD al registrar usuarios masivamente
+            }
+        }
+    }
+    
+    // http://localhost:8080/sisgene/api/usuarios/ENC1/numerar
+    // api/usuarios/2015-I/numerar
+    @RequestMapping(value = "/{codigoEncuesta}/numerar", method = RequestMethod.POST, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String actualizarUsuariosEncuestasNumeradas( 
+            @RequestBody String jsonData,
+            @PathVariable(value = "codigoEncuesta") String codigoEncuesta,
+            HttpServletRequest request) {
+        
+        JsonObject jsonObj = parseJsonObject(jsonData);
+        JsonArray jsonArrayPorUsuario = jsonObj.getJsonArray("usuarios");
+        Result<List<UsuarioPersona>> rstLstUsuPer = null;
+        List<UsuarioPersona> lstUserPer = new ArrayList<UsuarioPersona>();
+        
+        for ( Object encuestador : jsonArrayPorUsuario ) { 
+            JsonObject jsonItem = (JsonObject) encuestador;
+            String usuario = jsonItem.getString("usuario"); 
+            System.out.println("usuario:" + usuario);
+            
+            JsonObject jsonEncuesta = jsonItem.getJsonObject("encuestas");
+            int desde = jsonEncuesta.getInt("desde");
+            int hasta = jsonEncuesta.getInt("hasta");
+            System.out.println("desde:" + desde);
+            System.out.println("hasta:" + hasta);
+            
+            Result<UsuarioPersona> rstUserPer = userPersonService.findByUsuarioPersona(codigoEncuesta, usuario);
+            UsuarioPersona userPer = rstUserPer.getData();
+            userPer.setUspdesdenumEnc(desde);
+            userPer.setUsphastanumEnc(hasta);
+            
+            lstUserPer.add(userPer);
+        }
+        rstLstUsuPer = userPersonService.actualizar(lstUserPer);
+        if ( rstLstUsuPer.isSuccess() ) {
+            return getJsonMsg("Success", true);
+
+        } else {
+            return getJsonErrorMsg("Error al actualizar respuestas...");
+        }
+    }
+}

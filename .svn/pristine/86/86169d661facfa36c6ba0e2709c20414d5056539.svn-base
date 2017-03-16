@@ -1,0 +1,94 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.Pregunta;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+import java.util.Map;
+import javax.json.JsonArray;
+
+/**
+ *
+ */
+public interface PreguntaService {
+
+//    public boolean guardar();
+    
+    public boolean eliminar(String encuesta, int idPreg);
+    
+    public Result<Pregunta>  guardar(String encuesta, 
+                                    int  numero,
+                                    int seccion , 
+                                    int subseccion,
+                                    String descripcion,
+                                    String comentario,
+                                    int pregunta_unica_persona,
+                                    int tipoId,
+                                    String desripcionTipo,
+                                    List<Map> filasS,
+                                    int numeroRespuestasMaximo,
+                                    boolean band,
+                                    List<Map> columnas);
+    
+    public Result<Pregunta> encontrar(int idPregunta);
+    
+    /**
+     * @author: "Ledis Rivera Changra"
+     * @date: Viernes 19/02/2016
+     * @return Result<Pregunta>
+     * @param encuesta
+     * @param numero
+     * @param seccion
+     * @param subseccion
+     * @param pregunta_unica_persona
+     * @param subtipo
+     * @param tipoNumerico
+     * @param desde
+     * @param hasta
+     * @param descripcion
+     * @param tipoId
+     * @param descripcionTipo
+     * @param comentario
+     */
+    public Result<Pregunta> guardarPreguntaAbierta( String encuesta,
+                                                    int numero,
+                                                    int seccion,
+                                                    int subseccion,
+                                                    int pregunta_unica_persona,
+                                                    String subtipo,
+                                                    String tipoNumerico,
+                                                    double desde,
+                                                    double hasta,
+                                                    String descripcion,
+                                                    int tipoId,
+                                                    String descripcionTipo,
+                                                    String comentario);
+    
+     /**
+     * @author: "Ledis Rivera Changra"
+     * @date: Lunes 29/02/2016
+     * @return boolean
+     * @param encuesta
+     * @param numeroSeccion
+     * @param numeroPregunta
+     */
+    public boolean validarNumeroPregunta( String encuesta, String numeroSeccion, String numeroPregunta );
+    
+    /**
+     * @author: "Ledis Rivera Changra"
+     * @date: Lunes 29/02/2016
+     * @return int
+     * @param encuesta
+     * @param numeroSeccion
+     */
+    public int getUltimoNumeroPregunta( String encuesta, String numeroSeccion );
+    
+    /**
+     * @author: "Ledis Rivera Changra"
+     * @date: Lunes 08/03/2016
+     * @return boolean
+     * @param lstValores
+     * @param tipoRpta
+     */
+    public boolean validarValoresOpciones( List lstValores, int tipoRpta );
+    
+}

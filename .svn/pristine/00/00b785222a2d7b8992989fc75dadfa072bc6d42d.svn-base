@@ -1,0 +1,114 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CabEncRpta;
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import javax.persistence.Query;
+
+@Repository("cabEncRptaDao")
+@Transactional
+public class CabEncRptaDaoImpl extends GenericDaoImpl<CabEncRpta, Integer>
+        implements CabEncRptaDao {
+
+    public CabEncRptaDaoImpl() {
+        super(CabEncRpta.class);
+    }
+
+
+    @Override
+    public List<CabEncRpta> findAll() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public int findByCodigo(UsuarioPersona up, CaratulaEncuesta ec) {
+       
+        List<CabEncRpta> result = em.createNativeQuery("select ca.* from Cab_Enc_Rpta ca JOIN Usuario_Persona usp ON ca.usp_Id=usp.usp_Id WHERE usp.cae_Id=?1 and usp.usp_Id=?2 and ca.caer_bEnviada='1'")
+                .setParameter("2", up.getUspId())
+                .setParameter("1", ec)
+                .getResultList();
+//        System.out.println("sizeee::" + result.size());
+        return result.size();
+    }
+    
+    @Override
+    public int findByEncUsPer(UsuarioPersona up, CaratulaEncuesta cae){
+//        System.out.println("(Ledis)cae:" + cae.getCaeId());
+//        System.out.println("(Ledis)up:" + up.getUspId());
+        List<CabEncRpta> result = em.createQuery("select ca from CabEncRpta ca inner join ca.uspId up inner join up.caeId caeId where caeId=:cae and up.uspId=:up and up.caeId =:cae and ca.caerbEnviada=:env ")
+                .setParameter("cae", cae)
+                .setParameter("up", up.getUspId())
+                .setParameter("env",  '1')
+                .getResultList();
+//        System.out.println("Resultado:" + result.size());
+//        if(result==null){
+//            System.out.println("sizeee nuloooo::" );
+//        }else{
+//            System.out.println("sizeee cabEncRpta::" + result.size());
+//        }
+//        
+        return result.size() ;
+    }
+    
+    @Override
+    public int findByEncTot(UsuarioPersona up, CaratulaEncuesta ec) {
+        List<CabEncRpta> result = em.createNativeQuery("select ca.* from Cab_Enc_Rpta ca JOIN Usuario_Persona usp ON ca.usp_Id=usp.usp_Id WHERE usp.cae_Id=?1 and usp.usp_Id=?2")
+                .setParameter("2", up.getUspId())
+                .setParameter("1", ec)
+                .getResultList();
+        return result.size();
+
+    }
+    
+    @Override
+    public List<CabEncRpta> findByEnc(CaratulaEncuesta ca){
+//        System.out.println("caeId:" + ca.getCaeId());
+        List<CabEncRpta> result = em.createQuery(
+                  " select ca from CabEncRpta ca "
+                + " inner join ca.uspId up "
+                + " inner join up.caeId caeId "
+                + " where caeId=:cae "
+                + " and up.usuId.rolId.rolDescripcion like 'ENCUESTADOR' ")
+                .setParameter("cae", ca)
+                .getResultList();
+//        System.out.println("sizeee cabEncRpta::" + result.size());
+        return result ;
+    }
+
+    @Override
+    public List<CabEncRpta> findByCabRptas(String codigoEncuesta) {
+        List<CabEncRpta> resultado = em.createQuery("select caer from CabEncRpta caer "
+                + "inner join caer.uspId usp "
+                + "inner join usp.caeId cae "
+                + "where cae.caeCodigo like :codigoEncuesta" )
+                .setParameter("codigoEncuesta", codigoEncuesta)
+                .getResultList();
+//        System.out.println("Nº encuestados:" + resultado.size());
+        return resultado;
+    }
+
+    @Override
+    public int contarEncuestasPorEstado(int idUsuPer, char estadoCabEncRpta) {
+        int totalEncuestasPorEstado = 0;
+        Query query = em.createQuery(
+                " select count(caer.uspId.uspId) from CabEncRpta caer " +
+                " where caer.uspId.uspId =:idUsuPer " +
+                " and caer.caerEstado =:estadoCabEncRpta")
+                .setParameter("idUsuPer", idUsuPer)
+                .setParameter("estadoCabEncRpta", estadoCabEncRpta);
+        /*select count(up.usp_id)
+        from Cab_Enc_Rpta caer
+        inner join Usuario_Persona up on up.usp_id = caer.usp_id
+        where up.usp_id = 165
+        and caer.caer_estado = 'I';*/
+        
+        Object objContador = query.getSingleResult().toString();
+        totalEncuestasPorEstado = Integer.parseInt(String.valueOf(objContador));
+        System.out.println("totalEncuestasCompletas:" + totalEncuestasPorEstado);
+        return totalEncuestasPorEstado;
+    }
+
+}

@@ -1,0 +1,121 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.domain.Usuario;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("grupoDao")
+@Transactional
+public class GrupoDaoImpl extends GenericDaoImpl<Grupo, String> implements GrupoDao {
+
+    public GrupoDaoImpl() {
+        super(Grupo.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Grupo> findAll() {
+        return em.createNamedQuery("Rol.findAll")
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Grupo findByGrupoId(int id) {
+
+        List<Grupo> rol = em.createNamedQuery("Grupo.findByGruId")
+                .setParameter("gruId", id)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    public Grupo findByCaeUd(CaratulaEncuesta ca, int grupo) {
+
+        List<Grupo> rol = em.createQuery("select distinct g from  Grupo g, UsuarioPersona as up, CaratulaEncuesta ca "
+                + " where ca=up.caeId  and up.gruId=g and g.gruNumero=:grupId and ca=:cae")
+                .setParameter("grupId", grupo)
+                .setParameter("cae", ca)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    public boolean guardar(Grupo g) {
+        try {
+            em.persist(g);
+            em.flush();
+            return true;
+        } catch (Exception e) {
+            em.getTransaction().rollback();
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+
+    @Override
+    public Grupo findByGrupoSup(Usuario us) {
+        List<Grupo> rol = em.createNamedQuery("Grupo.findByGruSupervisor")
+                .setParameter("usuIdSupervisor", us)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    public List<Grupo> findByCaeUd(CaratulaEncuesta ca) {
+        List<Grupo> rol = em.createQuery("select distinct g from  Grupo g, UsuarioPersona as up, CaratulaEncuesta ca "
+                + " where ca=up.caeId  and up.gruId=g and ca=:cae")
+                .setParameter("cae", ca)
+                .getResultList();
+
+        return rol;
+    }
+    
+
+    @Override
+    public Grupo findByUsu(String usuario) {
+        List<Grupo> rol = em.createQuery("select g from  Grupo g, UsuarioPersona as up, Usuario usu where g.gruId=up.usuId and up.usuId=usu and usu.usuUsuario=:usuUsuario")
+                .setParameter("usuUsuario", usuario)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+    
+    @Override
+    public Grupo findBySupervisor(CaratulaEncuesta ca, int grupo) {
+
+        List<Grupo> rol = em.createQuery("select distinct g from  Grupo g, UsuarioPersona as up, CaratulaEncuesta ca "
+                + " where ca=up.caeId "
+                + " and up.gruId=g "
+                + " and g.gruNumero=:grupId "
+                + " and ca=:cae "
+                + " and g.usuIdSupervisor.rolId.rolDescripcion like 'SUPERVISOR'")
+                .setParameter("grupId", grupo)
+                .setParameter("cae", ca)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    public boolean eliminarGr(Grupo g) {
+         try {
+            em.remove(g);
+            em.flush();
+            return true;
+        } catch (Exception e) {
+            em.getTransaction().rollback();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+}

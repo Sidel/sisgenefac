@@ -1,0 +1,145 @@
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.validation.constraints.NotNull;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+@Entity
+public class DetalleRespuesta extends AbstractEntity implements Serializable, EntityItem<String> {
+    
+    private static final long serialVersionUID = 1L;
+    /**
+     * Uso interno para consultar tablas de BD
+     */
+    @Id
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "pre_id") 
+    private Integer idPregunta;
+
+//    @Column(name = "tipoRpta")
+    @Column(name = "pre_tipo_rpta")
+    private String tipoRpta;
+    
+//    @Column(name = "respondeUnaPersona")
+    @Column(name = "pre_unica_persona")
+    private String respondeUnaPersona;
+    
+    /**
+     * Uso para desplegar en Excel a exportar
+     */
+//    @Column(name = "numeroPregunta")
+    @Column(name = "pre_numero")
+    private String numeroPregunta;
+    
+//    @Column(name = "numeroSeccion")
+    @Column(name = "sec_numero_seccion")
+    private String numeroSeccion;
+    
+//    @Column(name = "valorRpta")
+//    @Column(name = "valorRpta")
+    @Column(name = "deer_valor_respuesta")
+    private String valorRpta;
+
+    public DetalleRespuesta() {
+    }
+
+    public DetalleRespuesta(Integer idPregunta, String tipoRpta, String respondeUnaPersona, String numeroPregunta, String numeroSeccion, String valorRpta) {
+        this.idPregunta = idPregunta;
+        this.tipoRpta = tipoRpta;
+        this.respondeUnaPersona = respondeUnaPersona;
+        this.numeroPregunta = numeroPregunta;
+        this.numeroSeccion = numeroSeccion;
+        this.valorRpta = valorRpta;
+    }
+
+    public Integer getIdPregunta() {
+        return idPregunta;
+    }
+
+    public void setIdPregunta(Integer idPregunta) {
+        this.idPregunta = idPregunta;
+    }
+    
+    public String getTipoRpta() {
+        return tipoRpta;
+    }
+
+    public void setTipoRpta(String tipoRpta) {
+        this.tipoRpta = tipoRpta;
+    }
+
+    public String getRespondeUnaPersona() {
+        return respondeUnaPersona;
+    }
+
+    public void setRespondeUnaPersona(String respondeUnaPersona) {
+        this.respondeUnaPersona = respondeUnaPersona;
+    }
+
+    public String getNumeroPregunta() {
+        return numeroPregunta;
+    }
+
+    public void setNumeroPregunta(String numeroPregunta) {
+        this.numeroPregunta = numeroPregunta;
+    }
+
+    public String getNumeroSeccion() {
+        return numeroSeccion;
+    }
+
+    public void setNumeroSeccion(String numeroSeccion) {
+        this.numeroSeccion = numeroSeccion;
+    }
+
+    public String getValorRpta() {
+        return valorRpta;
+    }
+
+    public void setValorRpta(String valorRpta) {
+        this.valorRpta = valorRpta;
+    }
+
+    @Override
+    public String toString() {
+        return "DetalleRespuesta{" + "idPregunta=" + idPregunta + ", tipoRpta=" + tipoRpta + ", respondeUnaPersona=" + respondeUnaPersona + ", numeroPregunta=" + numeroPregunta + ", numeroSeccion=" + numeroSeccion + ", valorRpta=" + valorRpta + '}';
+    }
+    
+    @Override 
+    public boolean equals(Object object) {
+        if (!(object instanceof DetalleRespuesta)) {
+            return false;
+        }
+        DetalleRespuesta other = (DetalleRespuesta) object;
+        if ((this.idPregunta == null && other.idPregunta != null) || (this.idPregunta != null && !this.idPregunta.equals(other.idPregunta))) {
+            return false;
+        }
+        return true;
+    }
+        
+    @Override 
+    public int hashCode() { 
+        int hash = 0; 
+        hash += (idPregunta != null ? idPregunta.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public String getId() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+}

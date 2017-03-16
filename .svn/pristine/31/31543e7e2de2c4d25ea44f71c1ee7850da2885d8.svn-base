@@ -1,0 +1,198 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.util.Date;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "auditoria")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "Auditoria.findAll", query = "SELECT a FROM Auditoria a"),
+    @NamedQuery(name = "Auditoria.findByAudId", query = "SELECT a FROM Auditoria a WHERE a.audId = :audId"),
+    @NamedQuery(name = "Auditoria.findByAudfhFechahoracreacion", query = "SELECT a FROM Auditoria a WHERE a.audfhFechahoracreacion = :audfhFechahoracreacion"),
+    @NamedQuery(name = "Auditoria.findByAudUsuarioCreacion", query = "SELECT a FROM Auditoria a WHERE a.audUsuarioCreacion = :audUsuarioCreacion"),
+    @NamedQuery(name = "Auditoria.findByAudfhFechahoramodificacion", query = "SELECT a FROM Auditoria a WHERE a.audfhFechahoramodificacion = :audfhFechahoramodificacion"),
+    @NamedQuery(name = "Auditoria.findByAudUsuarioModificacion", query = "SELECT a FROM Auditoria a WHERE a.audUsuarioModificacion = :audUsuarioModificacion"),
+    @NamedQuery(name = "Auditoria.findByAudDescripcion", query = "SELECT a FROM Auditoria a WHERE a.audDescripcion = :audDescripcion"),
+    @NamedQuery(name = "Auditoria.findByCatTipoAccion", query = "SELECT a FROM Auditoria a WHERE a.catTipoAccion = :catTipoAccion"),
+    @NamedQuery(name = "Auditoria.findByAudTablaBd", query = "SELECT a FROM Auditoria a WHERE a.audTablaBd = :audTablaBd")})
+public class Auditoria extends AbstractEntity implements EntityItem<String>  {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "aud_id")
+    private Integer audId;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "aud_fhFecha_hora_creacion")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date audfhFechahoracreacion;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 50)
+    @Column(name = "aud_usuario_creacion")
+    private String audUsuarioCreacion;
+    @Column(name = "aud_fhFecha_hora_modificacion")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date audfhFechahoramodificacion;
+    @Size(max = 50)
+    @Column(name = "aud_usuario_modificacion")
+    private String audUsuarioModificacion;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 300)
+    @Column(name = "aud_descripcion")
+    private String audDescripcion;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 5)
+    @Column(name = "cat_tipo_accion")
+    private String catTipoAccion;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 15)
+    @Column(name = "aud_tabla_bd")
+    private String audTablaBd;
+
+    public Auditoria() {
+    }
+
+    public Auditoria(Integer audId) {
+        this.audId = audId;
+    }
+
+    public Auditoria(Integer audId, Date audfhFechahoracreacion, String audUsuarioCreacion, String audDescripcion, String catTipoAccion, String audTablaBd) {
+        this.audId = audId;
+        this.audfhFechahoracreacion = audfhFechahoracreacion;
+        this.audUsuarioCreacion = audUsuarioCreacion;
+        this.audDescripcion = audDescripcion;
+        this.catTipoAccion = catTipoAccion;
+        this.audTablaBd = audTablaBd;
+    }
+
+    public Integer getAudId() {
+        return audId;
+    }
+
+    public void setAudId(Integer audId) {
+        this.audId = audId;
+    }
+
+    public Date getAudfhFechahoracreacion() {
+        return audfhFechahoracreacion;
+    }
+
+    public void setAudfhFechahoracreacion(Date audfhFechahoracreacion) {
+        this.audfhFechahoracreacion = audfhFechahoracreacion;
+    }
+
+    public String getAudUsuarioCreacion() {
+        return audUsuarioCreacion;
+    }
+
+    public void setAudUsuarioCreacion(String audUsuarioCreacion) {
+        this.audUsuarioCreacion = audUsuarioCreacion;
+    }
+
+    public Date getAudfhFechahoramodificacion() {
+        return audfhFechahoramodificacion;
+    }
+
+    public void setAudfhFechahoramodificacion(Date audfhFechahoramodificacion) {
+        this.audfhFechahoramodificacion = audfhFechahoramodificacion;
+    }
+
+    public String getAudUsuarioModificacion() {
+        return audUsuarioModificacion;
+    }
+
+    public void setAudUsuarioModificacion(String audUsuarioModificacion) {
+        this.audUsuarioModificacion = audUsuarioModificacion;
+    }
+
+    public String getAudDescripcion() {
+        return audDescripcion;
+    }
+
+    public void setAudDescripcion(String audDescripcion) {
+        this.audDescripcion = audDescripcion;
+    }
+
+    public String getCatTipoAccion() {
+        return catTipoAccion;
+    }
+
+    public void setCatTipoAccion(String catTipoAccion) {
+        this.catTipoAccion = catTipoAccion;
+    }
+
+    public String getAudTablaBd() {
+        return audTablaBd;
+    }
+
+    public void setAudTablaBd(String audTablaBd) {
+        this.audTablaBd = audTablaBd;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (audId != null ? audId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof Auditoria)) {
+            return false;
+        }
+        Auditoria other = (Auditoria) object;
+        if ((this.audId == null && other.audId != null) || (this.audId != null && !this.audId.equals(other.audId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.Auditoria[ audId=" + audId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+}

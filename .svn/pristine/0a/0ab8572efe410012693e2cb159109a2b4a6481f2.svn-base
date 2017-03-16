@@ -1,0 +1,46 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Funcionalidad;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("funcDao")
+@Transactional
+public class FuncionalidadDaoImpl extends GenericDaoImpl<Funcionalidad, String> implements FuncionalidadDao {
+
+    public FuncionalidadDaoImpl() {
+        super(Funcionalidad.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Funcionalidad> findAll() {
+        return em.createNamedQuery("Funcionalidad.findAll")
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Funcionalidad findByFunId(int id) {
+
+        List<Funcionalidad> rol = em.createNamedQuery("Funcionalidad.findByFunId")
+                .setParameter("funId", id)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Funcionalidad findByFunNombre(String codigo) {
+
+        List<Funcionalidad> rol = em.createNamedQuery("Funcionalidad.findByFunNombre")
+                .setParameter("funNombre", codigo)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+}

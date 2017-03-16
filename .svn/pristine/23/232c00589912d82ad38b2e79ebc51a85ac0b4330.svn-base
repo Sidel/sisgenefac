@@ -1,0 +1,64 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.util.List;
+
+/**
+ *
+ * @author ASUS
+ */
+public class SeccionUtil {
+    
+    private int seccion;
+    private String descripcion;
+    private List<SubseccionUtil> listaSubs;
+    
+    private String categoria;
+
+    public int getSeccion() {
+        return seccion;
+    }
+
+    public void setSeccion(int seccion) {
+        this.seccion = seccion;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public String getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
+    }
+
+    public List<SubseccionUtil> getListaSubs() {
+        return listaSubs;
+    }
+
+    public void setListaSubs(List<SubseccionUtil> listaSubs) {
+        this.listaSubs = listaSubs;
+    }
+
+    public SeccionUtil(int seccion, String descripcion, 
+                       String categoria,
+                       List<SubseccionUtil> listaSubs) {
+        this.seccion = seccion;
+        this.descripcion = descripcion;
+        this.categoria = categoria;
+        this.listaSubs = listaSubs;
+    }
+    
+}

@@ -1,0 +1,474 @@
+package com.fabrica.sisgene.service;
+
+//import com.fabrica.sisgene.dao.TaskLogDao;
+import com.fabrica.sisgene.dao.CaratulaEncuestaDao;
+import com.fabrica.sisgene.dao.DispositivoDao;
+import com.fabrica.sisgene.dao.GrupoDao;
+import com.fabrica.sisgene.dao.PersonaDao;
+import com.fabrica.sisgene.domain.Usuario;
+import com.fabrica.sisgene.dao.RolDao;
+import com.fabrica.sisgene.dao.TipoDocumentoDao;
+import com.fabrica.sisgene.dao.UbigeoDao;
+import com.fabrica.sisgene.dao.UsuarioDao;
+import com.fabrica.sisgene.dao.UsuarioPersonaDao;
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Dispositivo;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.domain.Persona;
+import com.fabrica.sisgene.domain.Rol;
+import com.fabrica.sisgene.domain.TipoDocumento;
+import com.fabrica.sisgene.domain.Ubigeo;
+import com.fabrica.sisgene.domain.UsuarioPersona;
+import com.fabrica.sisgene.util.Criptografo;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import java.util.Date;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+@Service("usuarioPersonaService")
+public class UsuarioServiceImpl extends AbstractService implements UsuarioService {
+
+    @Autowired
+    protected RolDao rolDao;
+
+    @Autowired
+    protected CaratulaEncuestaDao carEncDao;
+
+    @Autowired
+    protected TipoDocumentoDao tipDocDao;
+
+    @Autowired
+    protected PersonaDao perDao;
+
+    @Autowired
+    protected DispositivoDao disDao;
+
+    @Autowired
+    protected GrupoDao grupoDao;
+
+    @Autowired
+    protected UsuarioPersonaDao usupDao;
+
+    @Autowired
+    protected UbigeoDao ubiDao;
+
+    @Autowired
+    protected UsuarioDao usuDao;
+
+    @Autowired
+    protected UsuarioPersonaDao usuPerDao;
+
+    public UsuarioServiceImpl() {
+        super();
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<Usuario> find(String username) {
+
+        return ResultFactory.getSuccessResult(userDao.findByUsername(username));
+
+    }
+
+    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+    @Override
+    public Result<Usuario> store(
+            String encuesta,
+            String clave,
+            String dni,
+            String paterno,
+            String materno,
+            String nombres,
+            String tipo,
+            int grupo,
+            int desde,
+            int hasta,
+            String departamento,
+            String provincia,
+            String distrito,
+            String tipoEq,
+            String marca,
+            String serie) {
+
+        String usuario = "";
+        Criptografo crip = new Criptografo();
+        boolean flagGrupo = false;
+
+        CaratulaEncuesta carEnc = carEncDao.findByCodigo(encuesta);
+        System.out.println("0");
+        if (carEnc == null) {
+            return ResultFactory.getFailResult("No se encontro la Encuesta asignada a este usuario");
+        } else {
+
+            int numPer = usuPerDao.validarUsuarioEnEncuesta(dni, carEnc);
+
+           // System.out.println("numPer:"+numPer);
+            if (numPer > 0) {
+                return ResultFactory.getFailResult("El DNI de la persona ya ha sido registrado como un usuario para esta encuesta");
+            } else {
+
+                boolean existeAdministrador = false;
+
+                if (usuPerDao.findAdministrador(carEnc) != null) {
+                    existeAdministrador = true;
+                }
+                Rol rol = rolDao.findByRolDescripcion(tipo);
+                if ((!existeAdministrador) && rol.getRolDescripcion().toUpperCase().equals("ADMINISTRADOR")
+                        || (existeAdministrador && (!rol.getRolDescripcion().toUpperCase().equals("ADMINISTRADOR")))) {
+
+                    TipoDocumento t = new TipoDocumento();
+                    t = tipDocDao.findByTipDocumentoId(1);
+                    System.out.println("1");
+                    if (t == null) {
+                        return ResultFactory.getFailResult("No se encontro el Tipo de Documento asignado a este usuario");
+                    } else {
+//                rol = rolDao.findByRolDescripcion(tipo);
+                        System.out.println("2");
+                        if (rol == null) {
+                            return ResultFactory.getFailResult("No se encontro el Rol asignado a este usuario");
+                        } else {
+
+//                    if (rol.getRolDescripcion().toUpperCase().equals("ADMINISTRADOR") && existeAdministrador) {
+//                        return ResultFactory.getFailResult("Usuario de Encuesta no agregado. Ya existe un administrador para esta encuesta");
+//                    } else {
+                            Ubigeo ubi = new Ubigeo();
+                            ubi = ubiDao.findByDepProvDist(departamento, provincia, distrito);
+                            System.out.println("3");
+                            if (ubi == null) {
+                                return ResultFactory.getFailResult("No se encontro el Ubigeo asignado a este usuario");
+                            } else {
+                                Grupo grup = null;
+                                if (!rol.getRolDescripcion().toUpperCase().equals("ADMINISTRADOR")) {
+                                    grup = grupoDao.findByCaeUd(carEnc, grupo);
+                                    if (grup == null) {
+                                        System.out.println("No se encontro grupo, se creara uno");
+                                        grup = new Grupo(1, grupo, 1);
+                                        flagGrupo = true;
+                                        System.out.println("6");
+                                        if (!tipo.toUpperCase().equals("SUPERVISOR".toUpperCase())) {
+                                            return ResultFactory.getFailResult("Supervisor de grupo: Es necesario que primero registre un supervisor para el grupo " + grupo);
+                                        }
+                                        //
+                                    } else {
+                                        System.out.println("7.1");
+                                        if (tipo.toUpperCase().equals("SUPERVISOR".toUpperCase())) {
+                                            return ResultFactory.getFailResult("El grupo ya tiene un supervisor");
+                                        }
+                                    }
+                                    System.out.println("7");
+                                    System.out.println(" encontro grupo:::" + grup.getGruNumero());
+                                }
+
+                                Persona pers = null;
+
+                                pers = perDao.findByPerNumDocumento(dni.trim());
+
+                                boolean encontroPer = false;
+                                if (pers == null) {
+                                    pers = new Persona();
+                                    pers.setPerNombres(nombres);
+                                    pers.setPerapPaterno(paterno);
+                                    pers.setPerapMaterno(materno);
+                                    pers.setPerNumDocumento(dni);
+                                    pers.setTipId(t);
+                                } else {
+                                    encontroPer = true;
+                                }
+
+                                usuario = dni + carEnc.getCaeCodigo().substring(0, 2);
+                                Usuario us = new Usuario();
+                                us.setRolId(rol);
+                                us.setUsuId(5);
+                                us.setUsuClave(crip.encripta(clave));
+                                us.setUsuUsuario(usuario);
+
+                                UsuarioPersona usup = new UsuarioPersona();
+                                usup.setUspId(3);
+                                usup.setPerId(pers);
+                                usup.setCaeId(carEnc);
+                                usup.setUbiId(ubi);
+
+                                Dispositivo di = null;
+                                if (tipoEq.equals("") && rol.getRolDescripcion().toUpperCase().equals("ADMINISTRADOR")) {
+                                    System.out.println("registrando administrador");
+                                } else {
+                                    di = new Dispositivo();
+                                    di.setDisId(2);
+                                    di.setDisMarca(marca);
+                                    di.setDisSerie(serie);
+                                    di.setDisDescripcion(tipoEq);
+                                    di.setDisModelo(marca);
+                                    di.setDisNombre(tipoEq);
+                                    usup.setDisId(di);
+                                }
+
+                                usup.setUspdesdenumEnc(desde);
+                                usup.setUsphastanumEnc(hasta);
+                                usup.setUsuId(us);
+                                usup.setUsptotencRealizadas(0);
+                                usup.setUsptotencAsignadas(carEnc.getCaeNumeroEncuestasUsu());
+                                usup.setUspEstado('1');
+                                if ((!flagGrupo) && (!rol.getRolDescripcion().toUpperCase().equals("ADMINISTRADOR"))) {
+                                    usup.setGruId(grup);
+                                }
+
+                                System.out.println("4");
+                                try {
+
+                                    usuDao.guardar(us);
+
+                                    if (tipo.toUpperCase().equals("SUPERVISOR") && flagGrupo) {
+
+                                        //us = usuDao.findByUsernamePassword(usuario, clave);
+                                        if (us == null) {
+                                            System.out.println("no encontro gusuariooo::");
+                                        }
+                                        grup.setUsuIdSupervisor(us);
+                                    }
+
+                                    if (flagGrupo) {
+                                        grupoDao.guardar(grup);
+                                        //  grup = grupoDao.findByGrupoSup(us);
+                                        if (grup == null) {
+                                            return ResultFactory.getFailResult("No se encontro el Grupo recien registrado asignado a este usuario");
+                                        } else {
+                                            usup.setGruId(grup);
+                                        }
+
+                                    }
+
+                                    if (!encontroPer) {
+                                        perDao.guardar(pers);
+                                    }
+
+                                    System.out.println("5");
+
+                                    if (di != null) {
+                                        disDao.guardar(di);
+                                    }
+
+                                    System.out.println("6");
+
+                                    System.out.println("7");
+//                                System.out.println("grupo de persona.:" + usup.getGruId().getGruNumero());
+                                    usupDao.guardar(usup);
+
+                                    return ResultFactory.getSuccessResult(us);
+
+                                } catch (Exception e) {
+
+                                    return ResultFactory.getFailResult("Error");
+                                }
+
+                            }
+//                    }
+
+                        }
+                    }
+                } else {
+                    if (existeAdministrador) {
+                        return ResultFactory.getFailResult("Usuario Administrador de Encuesta: La encuesta ya cuenta con un Administrador");
+                    } else {
+                        return ResultFactory.getFailResult("Usuario Administrador de Encuesta: Primero agregue un Administrador para la Encuesta.");
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+    @Override
+    public Result<Usuario> remove(String username, String enc) {
+
+//        user.getUsuId();
+        CaratulaEncuesta car = carEncDao.findByCodigo(enc);
+        Usuario user = userDao.findByUsernameEnc(username, car);
+//        car.getCaeCodigo();
+        //long taskLogCount = taskLogDao.findTaskLogCountByUser(user);
+        if (user == null || car == null) {
+
+            return ResultFactory.getFailResult("No se eliminó el usuario de encuesta. Usuario =" + username + " no encontrado");
+        } else {
+
+            /* Inicio LRC */
+            // No se puede eliminar Supervisor si aún existen usuarios Encuestadores.
+            String rolUsuario = user.getRolId().getRolDescripcion();
+            int totEncuestadores = 0;
+
+            UsuarioPersona up = usupDao.findByUsuIdEnc(user, car);
+            int numeroGrupo = 0, idGrupo; // Add last for LRC
+            if ( up != null && up.getGruId() != null ) { // Add last for LRC
+                numeroGrupo = up.getGruId().getGruNumero();
+                idGrupo = up.getGruId().getGruId();
+            } // Add last for LRC
+
+            if ("SUPERVISOR".equals(rolUsuario.toUpperCase())) {
+                int idUsuarioSupervisor = user.getUsuId();
+                totEncuestadores = usupDao.getTotalEncuestadores(numeroGrupo, enc, idUsuarioSupervisor);
+            }
+            if ("ENCUESTADOR".equals(rolUsuario.toUpperCase()) || (totEncuestadores == 0 && "SUPERVISOR".equals(rolUsuario.toUpperCase()))) {
+                try {
+
+                    UsuarioPersona up2 = usupDao.findByUsuIdEnc(user, car);
+                    usuPerDao.remove(up);
+                    System.out.println("0");
+                    userDao.remove(user);
+
+                    System.out.println("1");
+                    String msg = "Usuario " + username + " fue eliminado";
+                    logger.info(msg);
+                    return ResultFactory.getSuccessResultMsg(msg);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return ResultFactory.getFailResult("No se eliminó el usuario =" + username);
+                }
+            } else {
+                return ResultFactory.getFailResult("No se puede eliminar un Supervisor, si aún existen Encuestadores del grupo " + numeroGrupo);
+            }
+        }
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<List<Usuario>> findAll(String actionUsername) {
+        return ResultFactory.getSuccessResult(userDao.findAll());
+
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<Usuario> findByUsernamePassword(String username, String password) {
+        System.out.println("username:" + username);
+        System.out.println("password:" + password);
+        Usuario usuario = userDao.findByUsernamePassword(username, password);
+
+        if (usuario == null) {
+            return ResultFactory.getFailResult("El usuario o contraseña es incorrecto");
+
+        } else {
+            return ResultFactory.getSuccessResult(usuario);
+        }
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<Usuario> actualizar(
+            String encuesta,
+            String usuario,
+            String dni,
+            String paterno,
+            String materno,
+            String nombres,
+            String tipo,
+            int grupo,
+            int desde,
+            int hasta,
+            String departamento,
+            String provincia,
+            String distrito,
+            String tipoEq,
+            String marca,
+            String serie) {
+
+        String oo = "";
+        Criptografo crip = new Criptografo();
+        boolean flagGrupo = false;
+
+        CaratulaEncuesta carEnc = carEncDao.findByCodigo(encuesta);
+        System.out.println("0");
+
+        if (carEnc == null) {
+            return ResultFactory.getFailResult("No se encontro la Encuesta asignada a este usuario");
+        } else {
+            if (carEnc.getCaeFinicio().after(new Date())) {
+
+                Usuario usu = userDao.findByUsername(usuario);
+
+                UsuarioPersona usuPer = usuPerDao.findByUsuId(usu);
+                Persona perModif = usuPer.getPerId();
+                if (perModif.getPerNumDocumento().equals(dni.trim())) {
+                    perModif.setPerNumDocumento(dni);
+                    perModif.setPerapPaterno(paterno);
+                    perModif.setPerapMaterno(materno);
+                    perModif.setPerNombres(nombres);
+                    perDao.merge(perModif);
+                } else {
+                    Persona perNueva = new Persona();
+                    perNueva.setPerNumDocumento(dni);
+                    perNueva.setPerapPaterno(paterno);
+                    perNueva.setPerapMaterno(materno);
+                    perNueva.setPerNombres(nombres);
+                    perDao.persist(perNueva);
+                    usuPer.setPerId(perNueva);
+                }
+
+                Rol rolModif = rolDao.findByRolDescripcion(tipo);
+
+                if (usu.getRolId().getRolDescripcion().toUpperCase().equals("ENCUESTADOR") && rolModif.getRolDescripcion().toUpperCase().equals("SUPERVISOR")) {
+                    return ResultFactory.getFailResult("Usuario de Encuesta no modificado. El grupo ya tiene un supervisor asignado");
+                }
+
+                usu.setRolId(rolModif);
+                usuDao.merge(usu);
+                //usu merge"!!!
+
+                Grupo grup = grupoDao.findByCaeUd(carEnc, grupo);
+
+                if (grup == null) {
+
+                    return ResultFactory.getFailResult("Grupo seleccionado no existe. Usuario no modificado");
+                } else {
+                    usuPer.setGruId(grup);
+
+                }
+
+                Ubigeo ubiModif = ubiDao.findByDepProvDist(departamento, provincia, distrito);
+                usuPer.setUbiId(ubiModif);
+
+                if (tipo.toUpperCase().equals("SUPERVISOR")) {
+                    usuPer.setUspdesdenumEnc(desde);
+                    usuPer.setUsphastanumEnc(hasta);
+                }
+
+                Dispositivo disMofi = usuPer.getDisId();
+                if (disMofi != null) {
+                    if (!disMofi.getDisDescripcion().equals(tipoEq)) {
+                        disMofi.setDisDescripcion(tipoEq);
+                    }
+                    disMofi.setDisMarca(marca);
+                    disMofi.setDisModelo(marca);
+                    disMofi.setDisSerie(serie);
+                    disDao.merge(disMofi);
+                    // dismodif merge
+                } else {
+                    disMofi.setDisId(1);
+                    disMofi.setDisDescripcion(tipoEq);
+                    disMofi.setDisMarca(marca);
+                    disMofi.setDisModelo(marca);
+                    disMofi.setDisSerie(serie);
+                    usuPer.setDisId(disMofi);
+                    disDao.persist(disMofi);
+                    // dis Modif persist
+                }
+
+                usuPerDao.merge(usuPer);
+                return ResultFactory.getSuccessResultMsg("Usuario modificado exisotamente");
+
+            } else {
+                return ResultFactory.getFailResult("No es posible modificar el Usuario de Encuesta. Encuesta ya iniciada");
+            }
+        }
+
+    }
+
+}

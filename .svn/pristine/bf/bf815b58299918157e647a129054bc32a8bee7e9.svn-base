@@ -1,0 +1,327 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.util.List;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Lob;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "pregunta")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "Pregunta.findAll", query = "SELECT p FROM Pregunta p"),
+    @NamedQuery(name = "Pregunta.findByPreId", query = "SELECT p FROM Pregunta p WHERE p.preId = :preId"),
+    @NamedQuery(name = "Pregunta.findByPreNumero", query = "SELECT p FROM Pregunta p WHERE p.preNumero = :preNumero"),
+    @NamedQuery(name = "Pregunta.findByPreEnunciado", query = "SELECT p FROM Pregunta p WHERE p.preEnunciado = :preEnunciado"),
+    @NamedQuery(name = "Pregunta.findByPreExplicativo", query = "SELECT p FROM Pregunta p WHERE p.preExplicativo = :preExplicativo"),
+    @NamedQuery(name = "Pregunta.findByPreComentario", query = "SELECT p FROM Pregunta p WHERE p.preComentario = :preComentario"),
+    @NamedQuery(name = "Pregunta.findByPreGuiaRpta", query = "SELECT p FROM Pregunta p WHERE p.preGuiaRpta = :preGuiaRpta"),
+    @NamedQuery(name = "Pregunta.findByPreTipoRpta", query = "SELECT p FROM Pregunta p WHERE p.preTipoRpta = :preTipoRpta"),
+    @NamedQuery(name = "Pregunta.findByPreUnicaPersona", query = "SELECT p FROM Pregunta p WHERE p.preUnicaPersona = :preUnicaPersona"),
+    @NamedQuery(name = "Pregunta.findByPreCantMaximaItems", query = "SELECT p FROM Pregunta p WHERE p.preCantMaximaItems = :preCantMaximaItems")})
+public class Pregunta extends AbstractEntity implements EntityItem<String>{
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "pre_id")
+    private Integer preId;
+    @Basic(optional = false)
+    @Column(name = "pre_numero")
+    private String preNumero;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 400)
+    @Column(name = "pre_enunciado")
+    private String preEnunciado;
+    @Size(max = 400)
+    @Column(name = "pre_explicativo")
+    private String preExplicativo;
+    @Size(max = 300)
+    @Column(name = "pre_comentario")
+    private String preComentario;
+    @Lob
+    @Column(name = "pre_guia_rpta")
+    private String preGuiaRpta;
+    @Basic(optional = false)
+    @Column(name = "pre_tipo_rpta")
+    private char[] preTipoRpta;
+    @Column(name = "pre_unica_persona")
+    private Integer preUnicaPersona;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "pre_cant_maxima_items")
+    private int preCantMaximaItems;
+    @Column(name = "pre_maxNumRptasMU")
+    private Integer premaxNumRptasMU;
+    @Column(name = "pre_importaOrdenRptasMU")
+    private Character preimportaOrdenRptasMU;
+    
+    @Column(name = "pre_subtipo")
+    private String preSubtipo;
+    @Column(name = "pre_tipoNumerico")
+    private String pretipoNumerico;
+    @Column(name = "pre_desde")
+    private Double preDesde;
+    @Column(name = "pre_hasta")
+    private Double preHasta;
+    
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "preId")
+    private List<PreguntaItem> preguntaItemList;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "preidEncuesta")
+    private List<PreguntaOpcion> preguntaOpcionList;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "preId")
+    private List<PreguntaOpcion> preguntaOpcionList1;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "preId")
+    private List<EstructuraEncuesta> estructuraEncuestaList;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "preId")
+    private List<DetEncRpta> detEncRptaList;
+
+    public Pregunta() {
+    }
+
+    public Pregunta(Integer preId) {
+        this.preId = preId;
+    }
+
+    public Pregunta(Integer preId, String preNumero, String preEnunciado, char[] preTipoRpta, int preCantMaximaItems) {
+        this.preId = preId;
+        this.preNumero = preNumero;
+        this.preEnunciado = preEnunciado;
+        this.preTipoRpta = preTipoRpta;
+        this.preCantMaximaItems = preCantMaximaItems;
+    }
+
+    public Integer getPremaxNumRptasMU() {
+        return premaxNumRptasMU;
+    }
+
+    public void setPremaxNumRptasMU(Integer premaxNumRptasMU) {
+        this.premaxNumRptasMU = premaxNumRptasMU;
+    }
+
+    public Character getPreimportaOrdenRptasMU() {
+        return preimportaOrdenRptasMU;
+    }
+
+    public void setPreimportaOrdenRptasMU(Character preimportaOrdenRptasMU) {
+        this.preimportaOrdenRptasMU = preimportaOrdenRptasMU;
+    }
+
+    public Integer getPreId() {
+        return preId;
+    }
+
+    public void setPreId(Integer preId) {
+        this.preId = preId;
+    }
+
+    public String getPreNumero() {
+        return preNumero;
+    }
+
+    public void setPreNumero(String preNumero) {
+        this.preNumero = preNumero;
+    }
+
+    public String getPreEnunciado() {
+        return preEnunciado;
+    }
+
+    public void setPreEnunciado(String preEnunciado) {
+        this.preEnunciado = preEnunciado;
+    }
+
+    public String getPreExplicativo() {
+        return preExplicativo;
+    }
+
+    public void setPreExplicativo(String preExplicativo) {
+        this.preExplicativo = preExplicativo;
+    }
+
+    public String getPreComentario() {
+        return preComentario;
+    }
+
+    public void setPreComentario(String preComentario) {
+        this.preComentario = preComentario;
+    }
+
+    public String getPreGuiaRpta() {
+        return preGuiaRpta;
+    }
+
+    public void setPreGuiaRpta(String preGuiaRpta) {
+        this.preGuiaRpta = preGuiaRpta;
+    }
+
+    public char[] getPreTipoRpta() {
+        return preTipoRpta;
+    }
+
+    public void setPreTipoRpta(char[] preTipoRpta) {
+        this.preTipoRpta = preTipoRpta;
+    }
+
+    public Integer getPreUnicaPersona() {
+        return preUnicaPersona;
+    }
+
+    public void setPreUnicaPersona(Integer preUnicaPersona) {
+        this.preUnicaPersona = preUnicaPersona;
+    }
+
+    public int getPreCantMaximaItems() {
+        return preCantMaximaItems;
+    }
+
+    public void setPreCantMaximaItems(int preCantMaximaItems) {
+        this.preCantMaximaItems = preCantMaximaItems;
+    }
+    
+    public String getPreSubtipo() {
+        return preSubtipo;
+    }
+
+    public void setPreSubtipo(String preSubtipo) {
+        this.preSubtipo = preSubtipo;
+    }
+
+    public String getPreTipoNumerico() {
+        return pretipoNumerico;
+    }
+
+    public void setPreTipoNumerico(String pretipoNumerico) {
+        this.pretipoNumerico = pretipoNumerico;
+    }
+
+    public Double getPreDesde() {
+        return preDesde;
+    }
+
+    public void setPreDesde(Double preDesde) {
+        this.preDesde = preDesde;
+    }
+
+    public Double getPreHasta() {
+        return preHasta;
+    }
+
+    public void setPreHasta(Double preHasta) {
+        this.preHasta = preHasta;
+    }
+
+    @XmlTransient
+    public List<PreguntaItem> getPreguntaItemList() {
+        return preguntaItemList;
+    }
+
+    public void setPreguntaItemList(List<PreguntaItem> preguntaItemList) {
+        this.preguntaItemList = preguntaItemList;
+    }
+
+    @XmlTransient
+    public List<PreguntaOpcion> getPreguntaOpcionList() {
+        return preguntaOpcionList;
+    }
+
+    public void setPreguntaOpcionList(List<PreguntaOpcion> preguntaOpcionList) {
+        this.preguntaOpcionList = preguntaOpcionList;
+    }
+
+    @XmlTransient
+    public List<PreguntaOpcion> getPreguntaOpcionList1() {
+        return preguntaOpcionList1;
+    }
+
+    public void setPreguntaOpcionList1(List<PreguntaOpcion> preguntaOpcionList1) {
+        this.preguntaOpcionList1 = preguntaOpcionList1;
+    }
+
+    @XmlTransient
+    public List<EstructuraEncuesta> getEstructuraEncuestaList() {
+        return estructuraEncuestaList;
+    }
+
+    public void setEstructuraEncuestaList(List<EstructuraEncuesta> estructuraEncuestaList) {
+        this.estructuraEncuestaList = estructuraEncuestaList;
+    }
+
+    @XmlTransient
+    public List<DetEncRpta> getDetEncRptaList() {
+        return detEncRptaList;
+    }
+
+    public void setDetEncRptaList(List<DetEncRpta> detEncRptaList) {
+        this.detEncRptaList = detEncRptaList;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (preId != null ? preId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof Pregunta)) {
+            return false;
+        }
+        Pregunta other = (Pregunta) object;
+        if ((this.preId == null && other.preId != null) || (this.preId != null && !this.preId.equals(other.preId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.Pregunta[ preId=" + preId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        
+        builder.add("id", getPreNumero())
+                .add("codigo", "")
+//                .add("seccion", getEstructuraEncuestaList().get(0).getSecId().getSecNumeroSeccion())
+//                .add("subseccion", getEstructuraEncuestaList().get(0).getSusIdNivel1()==null?"":getEstructuraEncuestaList().get(0).getSusIdNivel1().getSusNumeroSubseccion())
+                .add("descripcion", getPreEnunciado())
+                .add("tipo",  getPreTipoRpta().toString());
+        
+    }
+
+    @Override
+    public String getId() {
+        return getPreId().toString();
+    }
+    
+}

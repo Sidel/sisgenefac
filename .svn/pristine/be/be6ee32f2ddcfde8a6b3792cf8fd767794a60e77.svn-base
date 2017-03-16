@@ -1,0 +1,28 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Grupo;
+import com.fabrica.sisgene.domain.Usuario;
+import java.util.List;
+
+public interface GrupoDao extends GenericDao<Grupo, String> {
+
+    public List<Grupo> findAll();
+
+    public Grupo findByGrupoId(int idRol);
+
+    public Grupo findByCaeUd(CaratulaEncuesta ca, int grupo);
+    
+    public Grupo findByGrupoSup(Usuario us);
+    
+    public boolean guardar(Grupo g);
+    
+    public boolean eliminarGr(Grupo g);
+    
+    public List<Grupo> findByCaeUd(CaratulaEncuesta ca);
+    
+    public Grupo findByUsu(String usuario);
+
+    //public Rol findByRolDescripcion(String desc);
+    public Grupo findBySupervisor(CaratulaEncuesta ca, int grupo);
+}

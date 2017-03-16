@@ -1,0 +1,31 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Allegado;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+/** 
+ * @author Ledis Rivera Changra
+ * @date 12/03/2016
+ */
+@Repository("allegado")
+@Transactional
+public class AllegadoDaoImpl extends GenericDaoImpl<Allegado, Integer>
+        implements AllegadoDao {
+
+    public AllegadoDaoImpl() {
+        super(Allegado.class);
+    }
+
+    @Override
+    public List<Allegado> obtenerAllegados(int idCabEncRpta) {
+        List<Allegado> allegados = em.createQuery(
+                    " select alle from Allegado alle "
+                + " where alle.caerId.caerId = :idCabEncRpta")
+                .setParameter("idCabEncRpta", idCabEncRpta)
+                .getResultList();
+        return allegados;
+    }
+    
+}

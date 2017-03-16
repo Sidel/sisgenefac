@@ -1,0 +1,73 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Acceso;
+import com.fabrica.sisgene.domain.Rol;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("rolDao")
+@Transactional
+public class RolDaoImpl extends GenericDaoImpl<Rol, String> implements RolDao {
+
+    public RolDaoImpl() {
+        super(Rol.class);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<Rol> findAll() {
+         List<Rol> lista= em.createNamedQuery("Rol.findAll")
+                .getResultList();
+        
+//         System.out.println("******************listando roles:");
+//         for(Rol rol:lista){
+//             System.out.println(":"+rol.getRolDescripcion());
+//             for(Acceso acc: rol.getAccesoList()){
+//                 System.out.println("::::"+acc.getFunId().getFunNombre());
+//             }
+//         }
+         
+        return lista;
+    }
+    
+    @Override
+    public List<Rol> encontrarTodo(){
+        return em.createQuery("select rol from Rol rol")
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Rol findByRolId(int id) {
+
+        List<Rol> rol = em.createNamedQuery("Rol.findByRolId")
+                .setParameter("rolId", id)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Rol findByRolCodigo(String codigo) {
+
+        List<Rol> rol = em.createNamedQuery("Rol.findByRolCodigo")
+                .setParameter("rolCodigo", codigo)
+                .getResultList();
+
+        return (rol.size() == 1 ? rol.get(0) : null);
+    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Rol findByRolDescripcion(String desc) {
+
+        List<Rol> users = em.createNamedQuery("Rol.findByRolDescripcion")
+                .setParameter("rolDescripcion", desc)
+                .getResultList();
+
+        return (users.size() == 1 ? users.get(0) : null);
+    }
+}

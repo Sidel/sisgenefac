@@ -1,0 +1,182 @@
+package com.fabrica.sisgene.util;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public final class Constantes {
+    
+    // Códigos de rol de los usuarios en la BD
+    public static final String COD_ROL_ADMINISTRADOR = "A01";
+    public static final String COD_ROL_SUPERVISOR = "S01";
+    public static final String COD_ROL_ENCUESTADOR = "E01";
+    
+    public static final String FICHA = "FICHA" ;
+    public static final String DES_FICHA = "Código de Encuesta" ;
+    public static final int COLUMNA_FICHA = 0;
+    
+    public static final String SUPERVISOR = "SUPERV";
+    public static final String DES_SUPERVISOR = "Supervisor";
+    public static final int COLUMNA_SUPERVISOR = 1;
+    
+    // Reporte Simple
+    public static final String CODIGO_PERSONA = "COD_PER";
+    public static final String DES_COD_PER = "Codigo de Persona";
+    public static final int COLUMNA_COD_PER = 1;
+    
+    public static final String USUARIO = "USU";
+    public static final String DES_USUARIO = "Nombre de Usuario";
+    public static final int COLUMNA_NOMUSUARIO = 2;
+    
+    // Reporte Simple
+    public static final String NOMBRE_ALLEGADO = "NOM_ALLE";
+    public static final String DES_NOM_ALLE = "Nombres de cada una de las personas que viven habitualmente en este hogar";
+    public static final int COLUMNA_NOM_ALLE = 2;
+    
+    public static final String GRUPO = "GRUPO";
+    public static final String DES_GRUPO = "Grupo";
+    public static final int COLUMNA_GRUPO = 3;
+    
+    // Reporte Simple
+    public static final String APPELLIDO_ALLEGADO = "APE_ALLE";
+    public static final String DES_APE_ALLE = "Apellidos de cada una de las personas que viven habitualmente en este hogar";
+    public static final int COLUMNA_APE_ALLE = 3;
+    
+    public static final String FECH_ENC = "FECH. ENC";
+    public static final String DES_FECH_ENC = "Fecha de Encuesta";
+    public static final int COLUMNA_FECHAENC = 4;
+    
+    // Reporte Simple
+    public static final String GRADO_FAMILIARIDAD = "GRA_FAM";
+    public static final String DES_GRA_FAM = "Grado de Familiaridad";
+    public static final int COLUMNA_GRA_FAM = 4;
+    
+    public static final String NOMBRES = "NOM";
+    public static final String DES_NOMBRES = "Nombres";
+    public static final int COLUMNA_NOMBRES = 5;
+    
+    public static final String AP_PAT = "AP. PAT" ;
+    public static final String DES_APPAT ="Apellido Paterno" ;
+    public static final int COLUMNA_APPAT = 6;
+    
+    public static final String AP_MAT = "AP. MAT";
+    public static final String DES_APMAT = "Apellido Materno";
+    public static final int COLUMNA_APMAT = 7;
+    
+    public static final String DNI = "DNI";
+    public static final String DES_DNI = "Documento Nacional de Identidad";
+    public static final int COLUMNA_DNI = 8;
+    
+//    public static final String COND = "COND";
+//    public static final String DES_COND = "Condición";
+//    public static final int COLUMNA_CONDICION = 9;
+    
+    public static final String CALLE = "CALLE";
+    public static final String DES_CALLE = "Dirección de la vivienda(Nombre de Avenida, Calle, Jirón, Pasaje, etc.)";
+    public static final int COLUMNA_DIR = 9; // 10;
+    
+    public static final String CENPOB = "CENPOB";
+    public static final String DES_CENPOB = "Centro Poblado";
+    public static final int COLUMNA_CENPOB = 10; // 11;
+    
+    public static final String CONG = "CONG";
+    public static final String DES_CONG = "Conglomerado Nº";
+    public static final int COLUMNA_CONG = 11; // 12;
+    
+    public static final String ZONA = "ZONA";
+    public static final String DES_ZONA = "Zona Nº/AER Nº";
+    public static final int COLUMNA_ZONA = 12; // 13;
+    
+//    public static final String AREA = "AREA";
+//    public static final String DES_AREA = "Área";
+//    public static final int COLUMNA_AREA = 14;
+    
+    public static final String MZ = "MZ";
+    public static final String DES_MZ = "Manzana Nº";
+    public static final int COLUMNA_MZ = 13; // 15;
+    
+    public static final String VIV = "VIV";
+    public static final String DES_VIV = "Vivienda Nº";
+    public static final int COLUMNA_VIV = 14; // 16;
+    
+    public static final String HOG = "HOG";
+    public static final String DES_HOG = "Hogar Nº";
+    public static final int COLUMNA_HOG = 15; // 17;
+    
+    public static final String TEL = "TEL";
+    public static final String DES_TEL = "Teléfono";
+    public static final int COLUMNA_TEL = 16; // 18;
+    
+    public static final String CEL = "CEL";
+    public static final String DES_CEL = "Celular";
+    public static final int COLUMNA_CEL = 17; // 19;
+    
+    public static final String EMAIL = "EMAIL";
+    public static final String DES_EMAIL = "Correo Electrónico";
+    public static final int COLUMNA_EMAIL = 18; // 20;
+    
+    public static final String DEPART = "DEPART";
+    public static final String DES_DEPART = "Departamento";
+    public static final int COLUMNA_DEPART = 19; // 21;
+    
+    public static final String PROVIN = "PROVIN";
+    public static final String DES_PROVIN = "Provincia";
+    public static final int COLUMNA_PROVIN = 20; // 22;
+    
+    public static final String DISTRI = "DISTRI";
+    public static final String DES_DISTRI= "Distrito";
+    public static final int COLUMNA_DISTRI = 21; // 23;
+    
+//    public static final String PUERTA= "PUERTA";
+//    public static final String DES_PUERTA = "Puerta";
+//    public static final int COLUMNA_PUERTA = 24;
+//    
+//    public static final String INTER = "INTER";
+//    public static final String DES_INTER = "Interior";
+//    public static final int COLUMNA_INTER = 25;
+//    
+//    public static final String PISO = "PISO";
+//    public static final String DES_PISO = "Piso";
+//    public static final int COLUMNA_PISO = 26;
+//    
+//    public static final String ETAPA = "ETAPA";
+//    public static final String DES_ETAPA = "Etapa";
+//    public static final int COLUMNA_ETAPA = 27;
+//    
+//    public static final String SECTOR = "SECTOR";
+//    public static final String DES_SECTOR = "Sector";
+//    public static final int COLUMNA_SECTOR = 28;
+//    
+//    public static final String GRUPO_DIR = "GRUPO_DIR";
+//    public static final String DES_GRUPO_DIR = "Grupo Dirección";
+//    public static final int COLUMNA_GRUPO_DIR = 29;
+//    
+//    public static final String LOTE = "LOTE";
+//    public static final String DES_LOTE = "Lote";
+//    public static final int COLUMNA_LOTE = 30;
+//    
+//    public static final String KM = "KM";
+//    public static final String DES_KM = "Km";
+//    public static final int COLUMNA_KM = 31;
+    
+    public static final int COLUMNA_INICIO_PREGUNTA = 32;
+    
+    public static final int RPTA_UNICA = 1;
+    public static final int RPTA_MULTIPLE = 2;
+    public static final int RPTA_ABIERTA = 3;
+    public static final int RPTA_MATRIZ_SIMPLE = 4;
+    public static final int RPTA_MATRIZ_MULTIPLE = 5;
+    public static final int RPTA_MIXTA = 6;
+    
+    public static final int MATRIZ_BIDIMENSIONAL = 2;
+    
+    public static final String DOLAR = "\\$";
+    public static final String PORCENTAJE = "\\%";
+    public static final int LONGITUD_PREFIJO = 4;   // Prefijo: [01]
+
+    public static final String SIN_MARCAR_TABLET = "SIN MARCAR EN TABLET";
+    public static final String SIN_LLENAR_TABLET = "SIN LLENAR EN TABLET";
+    
+    public static final String PERSONA = "persona";
+    public static final String MULTIPERSONA = "multipersona";
+}

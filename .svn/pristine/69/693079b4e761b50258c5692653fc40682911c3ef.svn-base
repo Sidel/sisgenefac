@@ -1,0 +1,26 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.AllegadoDao;
+import com.fabrica.sisgene.domain.Allegado;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** 
+ * @author Ledis Rivera Changra
+ * @date 12/03/2016
+ */
+@Transactional
+@Service("allegadoService")
+public class AllegadoServiceImpl extends AbstractService implements AllegadoService {
+
+    @Autowired
+    private AllegadoDao allegadoDao;
+    
+    @Override
+    public List<Allegado> obtenerAllegados(int idCabEncRpta) {
+        return allegadoDao.obtenerAllegados(idCabEncRpta);
+    }
+    
+}

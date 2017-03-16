@@ -1,0 +1,105 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.AccesoDao;
+import com.fabrica.sisgene.dao.FuncionalidadDao;
+import com.fabrica.sisgene.dao.RolDao;
+import java.util.List;
+import com.fabrica.sisgene.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import java.text.SimpleDateFormat;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+@Service("accesoService")
+public class AccesoServiceImpl extends AbstractService implements AccesoService {
+
+    @Autowired
+    protected AccesoDao accesoDao;
+
+    @Autowired
+    protected RolDao rolDao;
+
+    @Autowired
+    protected FuncionalidadDao funDao;
+
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+    public AccesoServiceImpl() {
+        super();
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<Acceso> encontrar(int idCompany) {
+
+        Acceso company = accesoDao.findByAccId(idCompany);
+
+        if (company == null) {
+            return ResultFactory.getNotFoundResult();
+        }
+        return ResultFactory.getSuccessResult(company);
+    }
+    
+    @Override
+    public Result<List<Acceso>> encontrarPorRol(int idRol) {
+
+       List <Acceso> company = accesoDao.encontrarPorRol(idRol);
+
+        if (company == null) {
+            return ResultFactory.getNotFoundResult();
+        }
+        return ResultFactory.getSuccessResult(company);
+    }
+
+    @Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+    @Override
+    public Result<Acceso> guardar(
+            String rol,
+            String estado,
+            String funcionalidad) {
+
+        Acceso carEnc = new Acceso();
+        carEnc.setAccId(5);
+        carEnc.setRolId(rolDao.findByRolCodigo(rol));
+        carEnc.setAccEstado(estado.charAt(0));  
+        carEnc.setFunId(funDao.findByFunNombre(funcionalidad)); 
+
+        accesoDao.persist(carEnc);
+
+        return ResultFactory.getSuccessResult(carEnc);
+
+    }
+    
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    @Override
+    public Result<List<Acceso>> encontrarTodo() {
+        return ResultFactory.getSuccessResult(accesoDao.findAll());
+    }
+
+    @Override
+    public Result<Acceso> eliminar(int id) {
+
+        Acceso acc = accesoDao.findByAccId(id);
+        if (acc == null) {
+            return ResultFactory.getFailResult("El accesno con id " + id + " no puedo ser eliminado");
+        } else {
+            accesoDao.remove(acc);
+            String msg = "Acceso " + acc.getId() + " fue eliminada ";//por " + nombreUsuario;
+            logger.info(msg);
+            return ResultFactory.getSuccessResultMsg(msg);
+        }
+
+    }
+
+    @Override
+    public boolean eliminarAccesos(Rol rol) {
+        return accesoDao.eliminarAccesos(rol);
+    }
+
+
+}

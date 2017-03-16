@@ -1,0 +1,58 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Pregunta;
+import java.util.List;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("pregDao")
+@Transactional
+public class PreguntaDaoImpl extends GenericDaoImpl<Pregunta, String> implements PreguntaDao {
+
+    public PreguntaDaoImpl() {
+        super(Pregunta.class);
+    }
+
+//    @Override
+//    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+//    public List<DetEncuesta> findAll() {
+//        return em.createNamedQuery("Rol.findAll")
+//                .getResultList();
+//    }
+
+    @Override
+    public List<Pregunta> findByEncuesta(CaratulaEncuesta car) {
+
+//        System.out.println("car:"+car);
+        
+        List<Pregunta> rol = em.createQuery("select det from DetEncuesta det where det.caeId =:car ")
+                .setParameter("car", car)
+                .getResultList();
+
+//        System.out.println("sizeee:"+rol.size());
+        return rol;
+    }
+//
+//    @Override
+//    public DetEncuesta findByEncuesta(String enc, int idPreg) {
+//        List<DetEncuesta> rol = em.createQuery("select det from DetEncuesta det where det.caeId.caeCodigo=:enc and det.eseId.preId.preNumero=:idPreg")
+//                .setParameter("enc", enc)
+//                .setParameter("idPreg", idPreg)
+//                .getResultList();
+//
+//        System.out.println("sizeee:"+rol.size());
+//        return (rol.size()==1? rol.get(0): null);
+//    }
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public Pregunta find(int idPregunta) {
+        List<Pregunta> preguntas = em.createNamedQuery("Pregunta.findByPreId")
+                .setParameter("preId", idPregunta)
+                .getResultList();
+        return (preguntas.size() == 1 ? preguntas.get(0) : null);
+    }
+
+}

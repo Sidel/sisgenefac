@@ -1,0 +1,15 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Ubigeo;
+import java.util.List;
+
+public interface ZonificacionDao extends GenericDao<Ubigeo, String> {
+
+    public List<Ubigeo> findAll();
+
+    public List<String> findDepartamentos();
+
+    public List<String> findProvinciasPorDep(String departamento);
+
+    public List<String> findDistritoPorProv(String departamento, String provincia);
+}

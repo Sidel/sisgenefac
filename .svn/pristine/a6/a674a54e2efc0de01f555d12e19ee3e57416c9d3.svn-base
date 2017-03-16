@@ -1,0 +1,15 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.EstructuraEncuesta;
+import com.fabrica.sisgene.domain.Seccion;
+import com.fabrica.sisgene.domain.SubSeccion;
+import java.util.List;
+
+public interface EstructuraDao extends GenericDao<EstructuraEncuesta, String> {
+    
+    public List<EstructuraEncuesta> findByEnc(CaratulaEncuesta car, Seccion numSeccion);
+    
+    public List<EstructuraEncuesta> findByEncSubss(CaratulaEncuesta car, Seccion secc, SubSeccion numSubSeccion);
+    
+}

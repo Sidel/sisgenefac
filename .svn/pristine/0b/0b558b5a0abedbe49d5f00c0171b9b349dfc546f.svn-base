@@ -1,0 +1,18 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.DetEncRpta;
+import com.fabrica.sisgene.domain.DetalleRespuesta;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface DetEncRptaService {
+    
+//    public Result<List<DetalleRespuesta>> listarRespuestas(String codigoEncuesta, int caratulaEncRptaId);
+    
+    public DetEncRpta getDetalleRespuesta(int idCabEncRpta, int idPregunta);
+            
+}

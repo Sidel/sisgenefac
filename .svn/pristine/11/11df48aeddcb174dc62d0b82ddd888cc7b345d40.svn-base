@@ -1,0 +1,184 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "allegado")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "Allegado.findAll", query = "SELECT a FROM Allegado a"),
+    @NamedQuery(name = "Allegado.findByAllId", query = "SELECT a FROM Allegado a WHERE a.allId = :allId"),
+    @NamedQuery(name = "Allegado.findByAllCodigoIdentificacion", query = "SELECT a FROM Allegado a WHERE a.allCodigoIdentificacion = :allCodigoIdentificacion"),
+    @NamedQuery(name = "Allegado.findByAllNombres", query = "SELECT a FROM Allegado a WHERE a.allNombres = :allNombres"),
+    @NamedQuery(name = "Allegado.findByAllapPaterno", query = "SELECT a FROM Allegado a WHERE a.allapPaterno = :allapPaterno"),
+    @NamedQuery(name = "Allegado.findByAllapMaterno", query = "SELECT a FROM Allegado a WHERE a.allapMaterno = :allapMaterno"),
+    @NamedQuery(name = "Allegado.findByAllgradoFamiliaridad", query = "SELECT a FROM Allegado a WHERE a.allgradoFamiliaridad = :allgradoFamiliaridad")})
+public class Allegado extends AbstractEntity implements EntityItem<String>  {
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "all_id")
+    private Integer allId;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 2)
+    @Column(name = "all_codigo_identificacion")
+    private String allCodigoIdentificacion;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 50)
+    @Column(name = "all_nombres")
+    private String allNombres;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 60)
+    @Column(name = "all_apPaterno")
+    private String allapPaterno;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 60)
+    @Column(name = "all_apMaterno")
+    private String allapMaterno;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 100)
+    @Column(name = "all_gradoFamiliaridad")
+    private String allgradoFamiliaridad;
+    @JoinColumn(name = "caer_id", referencedColumnName = "caer_id")
+    @ManyToOne(optional = false)
+    private CabEncRpta caerId;
+
+    public Allegado() {
+    }
+
+    public Allegado(Integer allId) {
+        this.allId = allId;
+    }
+
+    public Allegado(Integer allId, String allCodigoIdentificacion, String allNombres, String allapPaterno, String allapMaterno, String allgradoFamiliaridad) {
+        this.allId = allId;
+        this.allCodigoIdentificacion = allCodigoIdentificacion;
+        this.allNombres = allNombres;
+        this.allapPaterno = allapPaterno;
+        this.allapMaterno = allapMaterno;
+        this.allgradoFamiliaridad = allgradoFamiliaridad;
+    }
+
+    public Integer getAllId() {
+        return allId;
+    }
+
+    public void setAllId(Integer allId) {
+        this.allId = allId;
+    }
+
+    public String getAllCodigoIdentificacion() {
+        return allCodigoIdentificacion;
+    }
+
+    public void setAllCodigoIdentificacion(String allCodigoIdentificacion) {
+        this.allCodigoIdentificacion = allCodigoIdentificacion;
+    }
+
+    public String getAllNombres() {
+        return allNombres;
+    }
+
+    public void setAllNombres(String allNombres) {
+        this.allNombres = allNombres;
+    }
+
+    public String getAllapPaterno() {
+        return allapPaterno;
+    }
+
+    public void setAllapPaterno(String allapPaterno) {
+        this.allapPaterno = allapPaterno;
+    }
+
+    public String getAllapMaterno() {
+        return allapMaterno;
+    }
+
+    public void setAllapMaterno(String allapMaterno) {
+        this.allapMaterno = allapMaterno;
+    }
+
+    public String getAllgradoFamiliaridad() {
+        return allgradoFamiliaridad;
+    }
+
+    public void setAllgradoFamiliaridad(String allgradoFamiliaridad) {
+        this.allgradoFamiliaridad = allgradoFamiliaridad;
+    }
+
+    public CabEncRpta getCaerId() {
+        return caerId;
+    }
+
+    public void setCaerId(CabEncRpta caerId) {
+        this.caerId = caerId;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (allId != null ? allId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof Allegado)) {
+            return false;
+        }
+        Allegado other = (Allegado) object;
+        if ((this.allId == null && other.allId != null) || (this.allId != null && !this.allId.equals(other.allId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.Allegado[ allId=" + allId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getId() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+}

@@ -1,0 +1,107 @@
+package com.fabrica.sisgene.web;
+
+import com.fabrica.sisgene.domain.Catalogo;
+import com.fabrica.sisgene.service.CatalogoService;
+import com.fabrica.sisgene.service.ZonificacionService;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+import javax.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping("/zonificacion")
+public class ZonificacionHandler extends AbstractHandler {
+
+    @Autowired
+    protected ZonificacionService zonService;
+
+    @RequestMapping(value = "", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String getDepartamentos(HttpServletRequest request) {
+        System.out.println("1");
+        Result<List<String>> cat = zonService.findDepartamentos();
+
+        if (cat.isSuccess()) {
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("success", true);
+            JsonArrayBuilder projectChildrenArrayBuilder = Json.createArrayBuilder();
+
+            for (String rol : cat.getData()) {
+
+                projectChildrenArrayBuilder.add(
+                        Json.createObjectBuilder()
+                        .add("id", 1)
+                        .add("descripcion", rol)
+                );
+            }
+            builder.add("departamentos", projectChildrenArrayBuilder);
+            return toJsonString(builder.build());
+        } else {
+            return getJsonErrorMsg(cat.getMsg());
+        }
+    }
+    
+    @RequestMapping(value = "/{departamento}", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String getProvincias(HttpServletRequest request,
+            @PathVariable(value = "departamento") String departamento) {
+        System.out.println("2");
+        Result<List<String>> cat = zonService.findProvinciasPorDep(departamento);
+
+        if (cat.isSuccess()) {
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("success", true);
+            JsonArrayBuilder projectChildrenArrayBuilder = Json.createArrayBuilder();
+
+            for (String rol : cat.getData()) {
+
+                projectChildrenArrayBuilder.add(
+                        Json.createObjectBuilder()
+                        .add("id", rol)
+                        .add("descripcion", rol)
+                );
+            }
+            builder.add("provincias", projectChildrenArrayBuilder);
+            return toJsonString(builder.build());
+        } else {
+            return getJsonErrorMsg(cat.getMsg());
+        }
+    }
+    
+    @RequestMapping(value = "/{departamento}/{provincia}", method = RequestMethod.GET, produces = {"application/json; charset=UTF-8"})
+    @ResponseBody
+    public String getProvincias(HttpServletRequest request,
+            @PathVariable(value = "departamento") String departamento,
+            @PathVariable(value = "provincia") String provincia) {
+        System.out.println("3");
+        Result<List<String>> cat = zonService.findDistritoPorProv(departamento, provincia);
+
+        if (cat.isSuccess()) {
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            builder.add("success", true);
+            JsonArrayBuilder projectChildrenArrayBuilder = Json.createArrayBuilder();
+
+            for (String rol : cat.getData()) {
+
+                projectChildrenArrayBuilder.add(
+                        Json.createObjectBuilder()
+                        .add("id", rol)
+                        .add("descripcion", rol)
+                );
+            }
+            builder.add("distritos", projectChildrenArrayBuilder);
+            return toJsonString(builder.build());
+        } else {
+            return getJsonErrorMsg(cat.getMsg());
+        }
+    }
+
+}

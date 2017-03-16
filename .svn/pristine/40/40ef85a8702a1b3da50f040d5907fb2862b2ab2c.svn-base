@@ -1,0 +1,20 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.domain.CaratulaEncuesta;
+import com.fabrica.sisgene.domain.Seccion;
+import com.fabrica.sisgene.domain.SeccionUtil;
+import com.fabrica.sisgene.vo.Result;
+import java.util.List;
+
+/**
+ *
+ */
+public interface SeccionService {
+
+    public boolean guardar(String encuesta, List<SeccionUtil> listaSecciones);
+    
+    public Result<List<Seccion>> listarSecciones(CaratulaEncuesta car);
+    
+    public Result<Seccion> modificar(CaratulaEncuesta encuesta, List<SeccionUtil> listaSecciones, List<Seccion> listaSeccionesEnt);
+
+}

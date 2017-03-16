@@ -1,0 +1,44 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Pregunta;
+import com.fabrica.sisgene.domain.PreguntaOpcion;
+import java.util.List;
+import javax.persistence.Query;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository("pregOpcDao")
+@Transactional
+public class PreguntaOpcionDaoImpl extends GenericDaoImpl<PreguntaOpcion, String> implements PreguntaOpcionDao {
+
+    public PreguntaOpcionDaoImpl() {
+        super(PreguntaOpcion.class);
+    }
+
+
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<PreguntaOpcion> findByEncuesta(Pregunta car) {
+
+        List<PreguntaOpcion> rol = em.createQuery("select pro from PreguntaOpcion pro where pro.preId=:preg")
+                .setParameter("preg", car)
+                .getResultList();
+
+        return rol;
+    }
+
+    @Override
+    public int contarNumeroOpciones(int idPregunta) {
+        int numeroOpciones = 0;
+        Query query = em.createQuery(
+                " select count(pro.opcId.opcId) " +
+                " from PreguntaOpcion pro " +
+                " where pro.preId.preId =:idPregunta ")
+                .setParameter("idPregunta", idPregunta);
+        Object objContador = query.getSingleResult().toString();
+        numeroOpciones = Integer.parseInt(String.valueOf(objContador));
+        System.out.println("N° Opciones:" + numeroOpciones);
+        return numeroOpciones;
+    }
+}

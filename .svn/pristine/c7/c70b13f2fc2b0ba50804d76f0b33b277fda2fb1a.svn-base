@@ -1,0 +1,42 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.AccesoDao;
+import com.fabrica.sisgene.dao.PreguntaOpcionDao;
+import com.fabrica.sisgene.dao.RolDao;
+import java.util.List;
+import com.fabrica.sisgene.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+//@Service("parametroService")
+@Service("pregOpcService")
+public class PreguntaOpcionServiceImpl extends AbstractService implements PreguntaOpcionService {
+
+    @Autowired
+    protected RolDao rolDao;
+
+    @Autowired
+    protected AccesoDao accDao;
+
+    @Autowired
+    protected PreguntaOpcionDao pregDao;
+
+    public PreguntaOpcionServiceImpl() {
+        super();
+    }
+
+    @Override
+    public Result<List<PreguntaOpcion>> finbyEncuesta(Pregunta preg) {
+        return ResultFactory.getSuccessResult(pregDao.findByEncuesta(preg)); //To  change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public int contarNumeroOpciones(int idPregunta) {
+        return pregDao.contarNumeroOpciones(idPregunta);
+    }
+    
+}

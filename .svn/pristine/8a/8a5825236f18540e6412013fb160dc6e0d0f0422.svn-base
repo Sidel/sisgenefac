@@ -1,0 +1,267 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package com.fabrica.sisgene.domain;
+
+import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.Basic;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
+/**
+ *
+ * @author ASUS
+ */
+@Entity
+@Table(name = "caratula_encuesta")
+@XmlRootElement
+@NamedQueries({
+    @NamedQuery(name = "CaratulaEncuesta.findAll", query = "SELECT c FROM CaratulaEncuesta c"),
+//    @NamedQuery(name = "CaratulaEncuesta.findAll", query = "SELECT c FROM CaratulaEncuesta c WHERE DATE_FORMAT(NOW(),'%Y-%m-%d') >= DATE_FORMAT(caeFinicio, '%Y-%m-%d') " +
+//                        " and DATE_FORMAT(NOW(),'%Y-%m-%d') <= DATE_FORMAT(caeFfin, '%Y-%m-%d')"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeId", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeId = :caeId"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeCodigo", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeCodigo = :caeCodigo"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeNombre", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeNombre = :caeNombre"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeDescripcion", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeDescripcion = :caeDescripcion"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeFinicio", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeFinicio = :caeFinicio"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeFfin", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeFfin = :caeFfin"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeEstado", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeEstado = :caeEstado"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeTipoDispositivo", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeTipoDispositivo = :caeTipoDispositivo"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeNumeroEncuestasUsu", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeNumeroEncuestasUsu = :caeNumeroEncuestasUsu"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeLogoEmpresa", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeLogoEmpresa = :caeLogoEmpresa"),
+    @NamedQuery(name = "CaratulaEncuesta.findByCaeTotSupervisores", query = "SELECT c FROM CaratulaEncuesta c WHERE c.caeTotSupervisores = :caeTotSupervisores")})
+public class CaratulaEncuesta extends AbstractEntity implements EntityItem<String> {
+
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "cae_id")
+    private Integer caeId;
+    @Size(max = 50)
+    @Column(name = "cae_codigo")
+    private String caeCodigo;
+    @Size(max = 300)
+    @Column(name = "cae_nombre")
+    private String caeNombre;
+    @Size(max = 600)
+    @Column(name = "cae_descripcion")
+    private String caeDescripcion;
+    @Column(name = "cae_finicio")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caeFinicio;
+    @Column(name = "cae_ffin")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date caeFfin;
+    @Column(name = "cae_estado")
+    private Character caeEstado;
+    @Column(name = "cae_tipo_dispositivo")
+    private Integer caeTipoDispositivo;
+    @Column(name = "cae_numero_encuestas_usu")
+    private Integer caeNumeroEncuestasUsu;
+    @Size(max = 200)
+    @Column(name = "cae_logo_empresa")
+    private String caeLogoEmpresa;
+    @Column(name = "cae_tot_supervisores")
+    private Integer caeTotSupervisores;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "caeId")
+    private List<DetEncuesta> detEncuestaList;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "caeId")
+    private List<UsuarioPersona> usuarioPersonaList;
+
+    public CaratulaEncuesta() {
+    }
+
+    public CaratulaEncuesta(Integer caeId) {
+        this.caeId = caeId;
+    }
+
+    public Integer getCaeId() {
+        return caeId;
+    }
+
+    public void setCaeId(Integer caeId) {
+        this.caeId = caeId;
+    }
+
+    public String getCaeCodigo() {
+        return caeCodigo;
+    }
+
+    public void setCaeCodigo(String caeCodigo) {
+        this.caeCodigo = caeCodigo;
+    }
+
+    public String getCaeNombre() {
+        return caeNombre;
+    }
+
+    public void setCaeNombre(String caeNombre) {
+        this.caeNombre = caeNombre;
+    }
+
+    public String getCaeDescripcion() {
+        return caeDescripcion;
+    }
+
+    public void setCaeDescripcion(String caeDescripcion) {
+        this.caeDescripcion = caeDescripcion;
+    }
+
+    public Date getCaeFinicio() {
+        return caeFinicio;
+    }
+
+    public void setCaeFinicio(Date caeFinicio) {
+        this.caeFinicio = caeFinicio;
+    }
+
+    public Date getCaeFfin() {
+        return caeFfin;
+    }
+
+    public void setCaeFfin(Date caeFfin) {
+        this.caeFfin = caeFfin;
+    }
+
+    public Character getCaeEstado() {
+        return caeEstado;
+    }
+
+    public void setCaeEstado(Character caeEstado) {
+        this.caeEstado = caeEstado;
+    }
+
+    public Integer getCaeTipoDispositivo() {
+        return caeTipoDispositivo;
+    }
+
+    public void setCaeTipoDispositivo(Integer caeTipoDispositivo) {
+        this.caeTipoDispositivo = caeTipoDispositivo;
+    }
+
+    public Integer getCaeNumeroEncuestasUsu() {
+        return caeNumeroEncuestasUsu;
+    }
+
+    public void setCaeNumeroEncuestasUsu(Integer caeNumeroEncuestasUsu) {
+        this.caeNumeroEncuestasUsu = caeNumeroEncuestasUsu;
+    }
+
+    public String getCaeLogoEmpresa() {
+        return caeLogoEmpresa;
+    }
+
+    public void setCaeLogoEmpresa(String caeLogoEmpresa) {
+        this.caeLogoEmpresa = caeLogoEmpresa;
+    }
+
+    public Integer getCaeTotSupervisores() {
+        return caeTotSupervisores;
+    }
+
+    public void setCaeTotSupervisores(Integer caeTotSupervisores) {
+        this.caeTotSupervisores = caeTotSupervisores;
+    }
+
+    @XmlTransient
+    public List<DetEncuesta> getDetEncuestaList() {
+        return detEncuestaList;
+    }
+
+    public void setDetEncuestaList(List<DetEncuesta> detEncuestaList) {
+        this.detEncuestaList = detEncuestaList;
+    }
+
+    @XmlTransient
+    public List<UsuarioPersona> getUsuarioPersonaList() {
+        return usuarioPersonaList;
+    }
+
+    public void setUsuarioPersonaList(List<UsuarioPersona> usuarioPersonaList) {
+        this.usuarioPersonaList = usuarioPersonaList;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (caeId != null ? caeId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof CaratulaEncuesta)) {
+            return false;
+        }
+        CaratulaEncuesta other = (CaratulaEncuesta) object;
+        if ((this.caeId == null && other.caeId != null) || (this.caeId != null && !this.caeId.equals(other.caeId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "com.fabrica.sisgene.domain.CaratulaEncuesta[ caeId=" + caeId + " ]";
+    }
+
+    @Override
+    public void addJson(JsonObjectBuilder builder) {
+
+        String estado = "";
+
+        switch (getCaeEstado()) {
+            case 'A':
+                estado = "Activa";
+                break;
+            case 'I':
+                estado = "Inactiva";
+                break;
+            case 'C':
+                estado = "Concluida";
+                break;
+            case 'R':
+                estado = "Rechazada";
+                break;
+        };
+        
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        builder.add("id", caeId)
+                .add("codigo", caeCodigo)
+                .add("descripcion", caeDescripcion)
+                .add("numero", caeNumeroEncuestasUsu)
+                .add("desde", (caeFinicio == null) ? "" : sdf.format(caeFinicio))
+                .add("hasta", (caeFfin == null) ? "" : sdf.format(caeFfin))
+                .add("estado", estado)
+                .add("equipo", caeTipoDispositivo);
+    }
+
+    @Override
+    public String getId() {
+        return caeId.toString();
+    }
+
+}

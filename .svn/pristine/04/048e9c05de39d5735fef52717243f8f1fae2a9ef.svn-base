@@ -1,0 +1,15 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Ubigeo;
+import java.util.List;
+
+public interface UbigeoDao extends GenericDao<Ubigeo, String> {
+
+    public List<Ubigeo> findAll();
+
+    public Ubigeo findByUbigeoId(int idRol);
+
+    public Ubigeo findByDepProvDist(String dep,String prov,String dist);
+
+    //public Ubigeo findByRolDescripcion(String desc);*/
+}

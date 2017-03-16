@@ -1,0 +1,14 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Persona;
+
+public interface PersonaDao extends GenericDao<Persona, String> {
+
+    public boolean guardar(Persona per);
+
+    public Persona findByPerId(int idPer);
+
+    public Persona findByPerNumDocumento(String numDoc);
+
+    //public Rol findByRolDescripcion(String desc);
+}

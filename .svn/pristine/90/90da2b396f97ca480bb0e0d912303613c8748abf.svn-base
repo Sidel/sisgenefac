@@ -1,0 +1,62 @@
+package com.fabrica.sisgene.service;
+
+import com.fabrica.sisgene.dao.CatalogoDao;
+import java.util.List;
+import com.fabrica.sisgene.domain.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.fabrica.sisgene.vo.Result;
+import com.fabrica.sisgene.vo.ResultFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+@Transactional
+@Service("catalogoService")
+public class CatalogoServiceImpl extends AbstractService implements CatalogoService {
+
+    @Autowired
+    protected CatalogoDao catDao;
+
+    public CatalogoServiceImpl() {
+        super();
+    }
+
+    @Override
+    public Result<Catalogo> encontrar(int id) {
+        Catalogo company = catDao.findByCatalogoId(id);
+
+        if (company == null) {
+            return ResultFactory.getNotFoundResult();
+        }
+        return ResultFactory.getSuccessResult(company);
+    }
+
+    @Override
+    public Result<Catalogo> encontrarTipoEquipo(String nombre) {
+        Catalogo company = catDao.findByEquipoNombre(nombre);
+
+        if (company == null) {
+            return ResultFactory.getNotFoundResult();
+        }
+        return ResultFactory.getSuccessResult(company);
+    }
+
+    @Override
+    public Result<List<Catalogo>> encontrarTodo() {
+        return ResultFactory.getSuccessResult(catDao.findAll());
+    }
+
+    @Override
+    public Result<Catalogo> encontrarPorGrupoSubGrupo(int idGrupo, int SubGrupo) {
+        return ResultFactory.getSuccessResult(catDao.findByCatalogoGrupoSubGrupo(idGrupo, SubGrupo));
+    }
+    
+    @Override
+    public Result<Catalogo> encontrarPorGrupoSubGrupoCod(int idGrupo, String cod) {
+        return ResultFactory.getSuccessResult(catDao.findByCatalogoGrupoSubGrupoCod(idGrupo, cod));
+    }
+
+    @Override
+    public Result<List<Catalogo>> encontrarPorGrupo(int id) {
+        return ResultFactory.getSuccessResult(catDao.findByCatalogoGrupo(id));
+    }
+}

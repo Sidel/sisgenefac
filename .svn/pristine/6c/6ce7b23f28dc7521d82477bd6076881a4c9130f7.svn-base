@@ -1,0 +1,40 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package com.fabrica.sisgene.domain;
+
+/**
+ *
+ * @author ASUS
+ */
+public class SubseccionUtil {
+
+    private int subseccion;
+    private String descripcion;
+
+    public int getSubseccion() {
+        return subseccion;
+    }
+
+    public void setSubseccion(int subseccion) {
+        this.subseccion = subseccion;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public SubseccionUtil(int subseccion, String descripcion) {
+        this.subseccion = subseccion;
+        this.descripcion = descripcion;
+    }
+
+    
+    
+}

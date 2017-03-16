@@ -1,0 +1,13 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.Allegado;
+import java.util.List;
+
+/**
+ * @author Ledis Rivera Changra
+ * @date 12/03/2016
+ */
+public interface AllegadoDao extends GenericDao<Allegado, Integer>{
+
+    public List<Allegado> obtenerAllegados(int idCabEncRpta);
+}

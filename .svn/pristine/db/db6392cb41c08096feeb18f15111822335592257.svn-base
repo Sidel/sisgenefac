@@ -1,0 +1,14 @@
+package com.fabrica.sisgene.dao;
+
+import com.fabrica.sisgene.domain.DetEncRpta;
+import java.util.List;
+
+/**
+ *
+ * @author Ledis Rivera Changra
+ */
+public interface DetEncRptaDao extends GenericDao<DetEncRpta, String> {
+    
+    public DetEncRpta getDetalleRespuesta(int idCabEncRpta, int idPregunta);
+    
+}

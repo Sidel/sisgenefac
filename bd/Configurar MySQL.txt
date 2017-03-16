@@ -1,0 +1,8 @@
+Servidor:
+localhost
+
+Usuario:
+sisgenefac
+
+Contraseña:
+sgdepfaresas
